@@ -24,7 +24,7 @@ export function FeaturedProducts() {
         </div>
 
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((product) => (
+              {featured.map((product) => (
             <Card
               key={product.id}
               className="group gap-0 overflow-hidden border border-border/80 bg-background py-0 shadow-sm transition-shadow duration-300 hover:shadow-md"
@@ -49,9 +49,6 @@ export function FeaturedProducts() {
                     <Heart className="h-4 w-4 text-primary" />
                   </Button>
                 </div>
-                <Badge className="absolute left-3 top-3 border-0 bg-background/90 font-normal text-foreground shadow-sm backdrop-blur-sm">
-                  {product.category}
-                </Badge>
               </CardContent>
               <CardFooter className="flex flex-col items-stretch gap-4 border-t-0 bg-transparent p-5 pt-4">
                 <div className="text-center sm:text-left">
@@ -88,7 +85,7 @@ export function FeaturedProducts() {
             className="rounded-full border-border px-10 font-medium"
             render={<Link href="/products" />}
           >
-            查看完整菜單
+            瀏覽所有品項
           </Button>
         </div>
       </div>

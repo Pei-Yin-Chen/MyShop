@@ -11,6 +11,7 @@ import {
 } from "@/lib/product-catalog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { SortDropdown } from "@/components/ui/select";
 import { ProductListCard } from "@/components/products/ProductListCard";
 import { cn } from "@/lib/utils";
 
@@ -114,7 +115,7 @@ export function ProductCatalog() {
                       type="button"
                       onClick={() => setCategory(cat)}
                       className={cn(
-                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                        "w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm transition-colors",
                         active
                           ? "bg-primary/15 font-medium text-primary"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -202,23 +203,18 @@ export function ProductCatalog() {
               )}
             </p>
 
-            <div className="flex items-center gap-2">
-              <label htmlFor="product-sort" className="text-sm text-muted-foreground whitespace-nowrap">
-                排序
-              </label>
-              <select
-                id="product-sort"
-                value={sortValue}
-                onChange={(e) => setSort(e.target.value as SortOption)}
-                className="h-9 min-w-[11rem] rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="default">預設順序</option>
-                <option value="price-asc">價格：低 → 高</option>
-                <option value="price-desc">價格：高 → 低</option>
-                <option value="rating-desc">評分最高</option>
-                <option value="name-asc">名稱 A→Z</option>
-              </select>
-            </div>
+            <SortDropdown
+              label="排序"
+              value={sortValue}
+              onValueChange={(val) => setSort(val as SortOption)}
+              options={[
+                { value: "default", label: "預設順序" },
+                { value: "price-asc", label: "價格：低 → 高" },
+                { value: "price-desc", label: "價格：高 → 低" },
+                { value: "rating-desc", label: "評分最高" },
+                { value: "name-asc", label: "名稱 A→Z" },
+              ]}
+            />
           </div>
 
           <section aria-label="商品列表">

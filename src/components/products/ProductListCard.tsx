@@ -15,7 +15,7 @@ export function ProductListCard({ product }: { product: Product }) {
       className="group scroll-mt-28 gap-0 overflow-hidden border border-border/80 bg-background py-0 shadow-sm transition-shadow hover:shadow-md"
     >
       <CardContent className="relative p-0">
-        <Link href={`/products#p-${product.id}`} className="block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <Link href={`/products/${product.id}`} className="block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
           <AspectRatio ratio={1} className="bg-muted/20">
             <Image
               src={product.image}
@@ -26,13 +26,10 @@ export function ProductListCard({ product }: { product: Product }) {
             />
           </AspectRatio>
         </Link>
-        <Badge className="absolute left-3 top-3 border-0 bg-background/90 font-normal text-foreground shadow-sm backdrop-blur-sm">
-          {product.category}
-        </Badge>
       </CardContent>
       <CardFooter className="flex flex-col items-stretch gap-3 border-t-0 bg-transparent p-4 pt-3">
         <div>
-          <Link href={`/products#p-${product.id}`}>
+          <Link href={`/products/${product.id}`}>
             <h3 className="font-semibold text-foreground transition-colors group-hover:text-primary">
               {product.name}
             </h3>
