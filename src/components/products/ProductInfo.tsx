@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Minus, Plus, ShoppingCart, Heart, Share2 } from "lucide-react";
 import type { Product } from "@/data/products";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,15 @@ import { useCart } from "@/lib/cart-context";
 export function ProductInfo({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
+  const router = useRouter();
 
   const increment = () => setQuantity((prev) => Math.min(prev + 1, 99));
   const decrement = () => setQuantity((prev) => Math.max(prev - 1, 1));
+
+  const handleBuyNow = () => {
+    addItem(product, quantity);
+    router.push("/cart");
+  };
 
   return (
     <div className="flex flex-col space-y-6">
@@ -96,7 +103,12 @@ export function ProductInfo({ product }: { product: Product }) {
           </Button>
         </div>
         
-        <Button variant="outline" size="lg" className="h-11 w-full rounded-full font-medium">
+        <Button 
+          variant="outline" 
+          size="lg" 
+          className="h-11 w-full rounded-full font-medium"
+          onClick={handleBuyNow}
+        >
           立即購買
         </Button>
       </div>

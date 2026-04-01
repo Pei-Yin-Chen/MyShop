@@ -147,7 +147,7 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                <Button size="lg" className="w-full rounded-full font-semibold shadow-md shadow-primary/10">
+                <Button size="lg" className="h-11 w-full rounded-full font-semibold shadow-md shadow-primary/10" render={<Link href="/checkout" />} nativeButton={false}>
                   前往結帳
                 </Button>
 
