@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ProductRating } from "./ProductRating";
 import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/lib/cart-context";
 
 export function ProductInfo({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1);
+  const { addItem } = useCart();
 
   const increment = () => setQuantity((prev) => Math.min(prev + 1, 99));
   const decrement = () => setQuantity((prev) => Math.max(prev - 1, 1));
@@ -84,7 +86,11 @@ export function ProductInfo({ product }: { product: Product }) {
             </Button>
           </div>
           
-          <Button size="lg" className="h-11 flex-1 rounded-full font-semibold shadow-md shadow-primary/10">
+          <Button 
+            size="lg" 
+            className="h-11 flex-1 rounded-full font-semibold shadow-md shadow-primary/10"
+            onClick={() => addItem(product, quantity)}
+          >
             <ShoppingCart className="mr-2 size-4" />
             加入購物車
           </Button>

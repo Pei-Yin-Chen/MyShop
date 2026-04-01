@@ -1,9 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import { ShoppingCart, Search, Menu, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useCart } from "@/lib/cart-context";
 
 export function Navbar() {
+  const { totalItems } = useCart();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -36,11 +41,13 @@ export function Navbar() {
           <Button variant="ghost" size="icon" className="hidden text-muted-foreground sm:flex">
             <Heart className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="relative text-muted-foreground">
+          <Button variant="ghost" size="icon" className="relative text-muted-foreground" nativeButton={false} render={<Link href="/cart" />}>
             <ShoppingCart className="h-5 w-5" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
-              2
-            </span>
+            {totalItems > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+                {totalItems}
+              </span>
+            )}
           </Button>
 
           <Sheet>

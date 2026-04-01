@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
@@ -7,8 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ProductRating } from "@/components/products/ProductRating";
+import { useCart } from "@/lib/cart-context";
 
 export function ProductListCard({ product }: { product: Product }) {
+  const { addItem } = useCart();
+
   return (
     <Card
       id={`p-${product.id}`}
@@ -36,14 +41,18 @@ export function ProductListCard({ product }: { product: Product }) {
           </Link>
           <ProductRating rating={product.rating} reviewCount={product.reviewCount} className="mt-2" />
         </div>
-        <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+        <div className="flex items-center justify-between border-t border-border/60 pt-3">
           <p className="text-lg font-semibold text-primary tabular-nums">
             <span className="text-sm font-medium text-muted-foreground">NT$</span>
             &nbsp;{product.price}
           </p>
-          <Button size="sm" className="shrink-0 rounded-full font-medium">
-            <ShoppingCart className="mr-1.5 size-3.5" />
-            加入購物車
+          <Button 
+            size="icon-sm" 
+            className="rounded-full shadow-sm"
+            onClick={() => addItem(product)}
+            aria-label="加入購物車"
+          >
+            <ShoppingCart className="size-3.5" />
           </Button>
         </div>
       </CardFooter>

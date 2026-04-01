@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Heart } from "lucide-react";
@@ -6,9 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { products } from "@/data/products";
+import { useCart } from "@/lib/cart-context";
 
 export function FeaturedProducts() {
   const featured = products.filter((p) => p.isFeatured);
+  const { addItem } = useCart();
 
   return (
     <section className="border-t border-border/60 bg-card py-24">
@@ -31,15 +35,17 @@ export function FeaturedProducts() {
             >
               {/* 覆蓋 Card 預設 py/gap，避免圖片上方留白；CardContent 需拿掉水平 padding */}
               <CardContent className="relative p-0">
-                <AspectRatio ratio={1} className="bg-muted/20">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  />
-                </AspectRatio>
+                <Link href={`/products/${product.id}`} className="block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <AspectRatio ratio={1} className="bg-muted/20">
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    />
+                  </AspectRatio>
+                </Link>
                 <div className="absolute right-3 top-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                   <Button
                     size="icon"
@@ -52,24 +58,27 @@ export function FeaturedProducts() {
               </CardContent>
               <CardFooter className="flex flex-col items-stretch gap-4 border-t-0 bg-transparent p-5 pt-4">
                 <div className="text-center sm:text-left">
-                  <h3 className="mb-1 font-semibold text-foreground transition-colors group-hover:text-primary">
-                    {product.name}
-                  </h3>
+                  <Link href={`/products/${product.id}`}>
+                    <h3 className="mb-1 font-semibold text-foreground transition-colors group-hover:text-primary">
+                      {product.name}
+                    </h3>
+                  </Link>
                   <p className="line-clamp-2 min-h-[2.875rem] text-sm leading-relaxed text-muted-foreground">
                     {product.description}
                   </p>
                 </div>
-                <div className="flex flex-col gap-3 border-t border-border/60 pt-3">
-                  {/* 全寬價格條，視覺填滿、不會右側空洞 */}
-                  <div className="rounded-xl bg-muted/50 px-4 py-2.5 text-center ring-1 ring-border/40">
-                    <p className="text-lg font-semibold text-primary">
-                      <span className="text-sm font-medium text-muted-foreground">NT$</span>
-                      <span className="tabular-nums">&nbsp;{product.price}</span>
-                    </p>
-                  </div>
-                  <Button size="sm" className="w-full rounded-full font-medium">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    加入購物車
+                <div className="flex items-center justify-between border-t border-border/60 pt-4">
+                  <p className="text-xl font-bold text-primary tabular-nums">
+                    <span className="text-sm font-medium text-muted-foreground">NT$</span>
+                    &nbsp;{product.price}
+                  </p>
+                  <Button 
+                    size="icon" 
+                    className="rounded-full shadow-sm"
+                    onClick={() => addItem(product)}
+                    aria-label="加入購物車"
+                  >
+                    <ShoppingCart className="size-4" />
                   </Button>
                 </div>
               </CardFooter>
