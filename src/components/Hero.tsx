@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   heroBreadFeatured,
   heroCakeFeatured,
@@ -42,7 +43,9 @@ export function Hero() {
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
               <Button
                 size="lg"
+                nativeButton={false}
                 className="h-12 rounded-full px-8 text-base font-medium shadow-md shadow-primary/10"
+                render={<Link href="/products" />}
               >
                 瀏覽品項
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -50,7 +53,9 @@ export function Hero() {
               <Button
                 size="lg"
                 variant="outline"
+                nativeButton={false}
                 className="h-12 rounded-full border-border bg-card/50 px-8 text-base font-medium backdrop-blur-sm"
+                render={<Link href="/products?category=蛋糕" />}
               >
                 預訂整模蛋糕
               </Button>

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +81,13 @@ export function FeaturedProducts() {
         </div>
 
         <div className="mt-14 flex justify-center">
-          <Button variant="outline" size="lg" className="rounded-full border-border px-10 font-medium">
+          <Button
+            variant="outline"
+            size="lg"
+            nativeButton={false}
+            className="rounded-full border-border px-10 font-medium"
+            render={<Link href="/products" />}
+          >
             查看完整菜單
           </Button>
         </div>

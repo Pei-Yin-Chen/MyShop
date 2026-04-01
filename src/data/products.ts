@@ -7,6 +7,10 @@ export interface Product {
   category: string;
   image: string;
   description: string;
+  /** 1–5，可一位小數 */
+  rating: number;
+  /** 評價則數（展示用） */
+  reviewCount: number;
   isFeatured?: boolean;
 }
 
@@ -18,6 +22,8 @@ export const products: Product[] = [
     category: "蛋糕",
     image: shopImages.seasonSundae,
     description: "小杯盛裝的鬆軟蛋糕體，上層擠上草莓風味奶油，再點綴一顆鮮草莓。",
+    rating: 4.7,
+    reviewCount: 86,
     isFeatured: true,
   },
   {
@@ -27,6 +33,8 @@ export const products: Product[] = [
     category: "麵包",
     image: shopImages.bread,
     description: "長時間發酵，外脆內軟，麥香溫潤。",
+    rating: 4.8,
+    reviewCount: 214,
     isFeatured: true,
   },
   {
@@ -36,15 +44,19 @@ export const products: Product[] = [
     category: "麵包",
     image: shopImages.croissant,
     description: "奶油層次分明，烘烤至金黃酥脆。",
+    rating: 4.6,
+    reviewCount: 402,
     isFeatured: true,
   },
   {
     id: "4",
     name: "綜合馬卡龍禮盒（8 入）",
     price: 520,
-    category: "甜點",
+    category: "蛋糕",
     image: shopImages.macarons,
     description: "低甜度內餡，色彩柔和，送禮體面。",
+    rating: 4.9,
+    reviewCount: 63,
     isFeatured: false,
   },
   {
@@ -54,6 +66,8 @@ export const products: Product[] = [
     category: "麵包",
     image: shopImages.cinnamonRoll,
     description: "溫暖肉桂香氣，淋上自製乳酪糖霜。",
+    rating: 4.5,
+    reviewCount: 178,
     isFeatured: false,
   },
   {
@@ -63,6 +77,8 @@ export const products: Product[] = [
     category: "蛋糕",
     image: shopImages.fruitTart,
     description: "酥脆塔皮與卡士達，鋪上當日新鮮水果。",
+    rating: 4.7,
+    reviewCount: 95,
     isFeatured: false,
   },
   {
@@ -72,6 +88,8 @@ export const products: Product[] = [
     category: "麵包",
     image: shopImages.userCake800,
     description: "柔軟麵包裡藏著酸甜的草莓果粒，每一口都咬得到果香。",
+    rating: 4.4,
+    reviewCount: 52,
     isFeatured: true,
   },
   {
@@ -81,6 +99,8 @@ export const products: Product[] = [
     category: "麵包",
     image: shopImages.userBakery800,
     description: "蛋奶香氣飽滿，撕開如雲朵般柔軟。",
+    rating: 4.6,
+    reviewCount: 131,
     isFeatured: false,
   },
 ];

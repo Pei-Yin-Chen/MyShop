@@ -17,10 +17,10 @@ export function Navbar() {
             <Link href="/products" className="transition-colors hover:text-foreground">
               所有商品
             </Link>
-            <Link href="/cakes" className="transition-colors hover:text-foreground">
+            <Link href="/products?category=蛋糕" className="transition-colors hover:text-foreground">
               蛋糕
             </Link>
-            <Link href="/bread" className="transition-colors hover:text-foreground">
+            <Link href="/products?category=麵包" className="transition-colors hover:text-foreground">
               麵包
             </Link>
             <Link href="/about" className="transition-colors hover:text-foreground">
@@ -50,8 +50,8 @@ export function Navbar() {
             <SheetContent side="right">
               <nav className="mt-8 flex flex-col gap-5 text-base font-medium">
                 <Link href="/products">所有商品</Link>
-                <Link href="/cakes">蛋糕</Link>
-                <Link href="/bread">麵包</Link>
+                <Link href="/products?category=蛋糕">蛋糕</Link>
+                <Link href="/products?category=麵包">麵包</Link>
                 <Link href="/about">關於我們</Link>
               </nav>
             </SheetContent>
