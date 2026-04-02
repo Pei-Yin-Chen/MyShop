@@ -1,5 +1,5 @@
 import type { Product } from "@/data/products";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicSupabaseClient } from "@/lib/supabase/public-server";
 
 /** 無圖片時避免 next/image 空 src */
 const IMAGE_PLACEHOLDER =
@@ -10,7 +10,7 @@ interface ProductImageRow {
   sort_order: number;
 }
 
-interface ProductRow {
+export interface ProductRow {
   id: string;
   name: string;
   subtitle: string | null;
@@ -78,7 +78,8 @@ export function mapProductRow(row: ProductRow): Product {
   };
 }
 
-const productSelect = `
+/** 與 mapProductRow 對應的 select，前台／瀏覽器端查詢可複用 */
+export const PRODUCT_LIST_SELECT = `
   id,
   name,
   subtitle,
@@ -101,10 +102,10 @@ const productSelect = `
 `;
 
 export async function fetchProductsForCatalog(): Promise<Product[]> {
-  const supabase = await createClient();
+  const supabase = createPublicSupabaseClient();
   const { data, error } = await supabase
     .from("products")
-    .select(productSelect)
+    .select(PRODUCT_LIST_SELECT)
     .eq("status", "active")
     .order("display_order", { ascending: true });
 
@@ -117,10 +118,10 @@ export async function fetchProductsForCatalog(): Promise<Product[]> {
 }
 
 export async function fetchProductById(id: string): Promise<Product | null> {
-  const supabase = await createClient();
+  const supabase = createPublicSupabaseClient();
   const { data, error } = await supabase
     .from("products")
-    .select(productSelect)
+    .select(PRODUCT_LIST_SELECT)
     .eq("id", id)
     .eq("status", "active")
     .maybeSingle();
@@ -134,10 +135,10 @@ export async function fetchProductById(id: string): Promise<Product | null> {
 }
 
 export async function fetchFeaturedProducts(): Promise<Product[]> {
-  const supabase = await createClient();
+  const supabase = createPublicSupabaseClient();
   const { data, error } = await supabase
     .from("products")
-    .select(productSelect)
+    .select(PRODUCT_LIST_SELECT)
     .eq("is_featured", true)
     .eq("status", "active")
     .order("display_order", { ascending: true });
@@ -155,10 +156,10 @@ export async function fetchRelatedProducts(
   excludeId: string,
   limit = 4,
 ): Promise<Product[]> {
-  const supabase = await createClient();
+  const supabase = createPublicSupabaseClient();
   const { data, error } = await supabase
     .from("products")
-    .select(productSelect)
+    .select(PRODUCT_LIST_SELECT)
     .eq("category", category)
     .eq("status", "active")
     .neq("id", excludeId)
@@ -174,7 +175,7 @@ export async function fetchRelatedProducts(
 }
 
 export async function fetchAllProductIds(): Promise<string[]> {
-  const supabase = await createClient();
+  const supabase = createPublicSupabaseClient();
   const { data, error } = await supabase
     .from("products")
     .select("id")

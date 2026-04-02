@@ -96,5 +96,6 @@ export async function signOut() {
   const supabase = await createClient()
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
-  redirect('/login')
+  // 登出後回首頁（比直接導到登入頁更順）
+  redirect('/')
 }

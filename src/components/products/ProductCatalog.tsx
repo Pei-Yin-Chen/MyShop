@@ -44,10 +44,12 @@ export function ProductCatalog({ products }: { products: Product[] }) {
 
   const [minStr, setMinStr] = useState(() => searchParams.get("min") ?? "");
   const [maxStr, setMaxStr] = useState(() => searchParams.get("max") ?? "");
+  const [searchStr, setSearchStr] = useState(() => searchParams.get("q") ?? "");
 
   useEffect(() => {
     setMinStr(searchParams.get("min") ?? "");
     setMaxStr(searchParams.get("max") ?? "");
+    setSearchStr(searchParams.get("q") ?? "");
   }, [searchParams]);
 
   function pushQuery(updates: Record<string, string | null | undefined>, resetPage = false) {
@@ -88,6 +90,16 @@ export function ProductCatalog({ products }: { products: Product[] }) {
     pushQuery({ min: null, max: null }, true);
   }
 
+  function applySearch() {
+    const t = searchStr.trim().slice(0, 80);
+    pushQuery({ q: t || null }, true);
+  }
+
+  function clearSearch() {
+    setSearchStr("");
+    pushQuery({ q: null }, true);
+  }
+
   const sortValue = q.sort;
 
   return (
@@ -100,13 +112,51 @@ export function ProductCatalog({ products }: { products: Product[] }) {
           所有商品
         </h1>
         <p className="mt-3 max-w-xl text-muted-foreground">
-          依分類瀏覽、篩選價格與主廚推薦，並可排序與分頁檢索。
+          可搜尋關鍵字，依分類瀏覽、篩選價格與主廚推薦，並可排序與分頁。
         </p>
       </header>
 
       <div className="lg:grid lg:grid-cols-[minmax(0,220px)_1fr] lg:gap-10 xl:grid-cols-[minmax(0,240px)_1fr]">
         {/* 側欄：分類導覽 + 篩選 */}
         <aside className="mb-10 space-y-8 lg:mb-0">
+          <section aria-labelledby="search-heading">
+            <h2 id="search-heading" className="mb-3 text-sm font-semibold text-foreground">
+              搜尋
+            </h2>
+            <div className="space-y-2">
+              <input
+                type="search"
+                enterKeyHint="search"
+                placeholder="商品名稱或描述…"
+                value={searchStr}
+                onChange={(e) => setSearchStr(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    applySearch();
+                  }
+                }}
+                className="h-9 w-full rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" className="rounded-full" onClick={applySearch}>
+                  搜尋
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={clearSearch}
+                >
+                  清除
+                </Button>
+              </div>
+            </div>
+          </section>
+
+          <Separator className="hidden lg:block" />
+
           <nav aria-label="商品分類">
             <h2 className="mb-3 text-sm font-semibold text-foreground">分類導覽</h2>
             <ul className="flex flex-wrap gap-2 lg:flex-col lg:flex-nowrap lg:gap-1">
@@ -224,7 +274,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
           <section aria-label="商品列表">
             {items.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center text-muted-foreground">
-                沒有符合條件的商品，請調整分類或篩選。
+                沒有符合條件的商品，請調整搜尋、分類或篩選。
               </div>
             ) : (
               <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">

@@ -14,6 +14,8 @@ export interface CatalogQuery {
   sort: SortOption;
   page: number;
   featuredOnly: boolean;
+  /** 關鍵字（比對名稱、副標、簡述） */
+  search?: string;
   minPrice?: number;
   maxPrice?: number;
 }
@@ -42,6 +44,15 @@ function parseOptionalPrice(value: string | null): number | undefined {
   return n;
 }
 
+const SEARCH_MAX_LEN = 80;
+
+function parseSearchParam(value: string | null): string | undefined {
+  if (value == null) return undefined;
+  const t = value.trim();
+  if (t === "") return undefined;
+  return t.slice(0, SEARCH_MAX_LEN);
+}
+
 const SORT_VALUES: SortOption[] = [
   "default",
   "price-asc",
@@ -60,10 +71,15 @@ export function parseCatalogQuery(searchParams: URLSearchParams): CatalogQuery {
   const page = parsePositiveInt(searchParams.get("page"), 1);
   const featuredOnly = searchParams.get("featured") === "1";
 
-  const minPrice = parseOptionalPrice(searchParams.get("min"));
-  const maxPrice = parseOptionalPrice(searchParams.get("max"));
+  let minPrice = parseOptionalPrice(searchParams.get("min"));
+  let maxPrice = parseOptionalPrice(searchParams.get("max"));
+  if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+    [minPrice, maxPrice] = [maxPrice, minPrice];
+  }
 
-  return { category, sort, page, featuredOnly, minPrice, maxPrice };
+  const search = parseSearchParam(searchParams.get("q"));
+
+  return { category, sort, page, featuredOnly, search, minPrice, maxPrice };
 }
 
 export function filterProducts(list: Product[], q: CatalogQuery): Product[] {
@@ -77,12 +93,24 @@ export function filterProducts(list: Product[], q: CatalogQuery): Product[] {
     out = out.filter((p) => p.isFeatured);
   }
 
-  if (q.minPrice != null) {
-    out = out.filter((p) => p.price >= q.minPrice);
+  const kw = q.search;
+  if (kw) {
+    out = out.filter(
+      (p) =>
+        p.name.includes(kw) ||
+        p.description.includes(kw) ||
+        (p.subtitle?.includes(kw) ?? false),
+    );
   }
 
-  if (q.maxPrice != null) {
-    out = out.filter((p) => p.price <= q.maxPrice);
+  const minPrice = q.minPrice;
+  if (minPrice != null) {
+    out = out.filter((p) => p.price >= minPrice);
+  }
+
+  const maxPrice = q.maxPrice;
+  if (maxPrice != null) {
+    out = out.filter((p) => p.price <= maxPrice);
   }
 
   return out;

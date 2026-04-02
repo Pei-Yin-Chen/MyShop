@@ -7,7 +7,7 @@ import { fetchProductsForCatalog } from "@/lib/supabase/fetch-products";
 
 export const metadata: Metadata = {
   title: "所有商品 · My Pâtisserie",
-  description: "瀏覽蛋糕、麵包與甜點，依分類與篩選找到想要的品項。",
+  description: "瀏覽蛋糕、麵包與甜點，可搜尋、依分類與價格篩選、排序與分頁。",
 };
 
 function CatalogFallback() {

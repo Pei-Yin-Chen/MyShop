@@ -19,6 +19,11 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+function maxQuantityForProduct(product: Product): number {
+  if (product.stockQuantity == null) return 99;
+  return Math.min(99, Math.max(0, product.stockQuantity));
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -44,16 +49,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items, isInitialized]);
 
   const addItem = (product: Product, quantity = 1) => {
+    const cap = maxQuantityForProduct(product);
+    if (cap <= 0) return;
+    const q = Math.min(Math.max(1, quantity), cap);
     setItems((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
+        const nextQty = Math.min(existing.quantity + q, cap);
         return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
+          item.id === product.id ? { ...item, quantity: nextQty } : item,
         );
       }
-      return [...prev, { ...product, quantity }];
+      return [...prev, { ...product, quantity: q }];
     });
   };
 
@@ -67,9 +74,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setItems((prev) =>
-      prev.map((item) =>
-        item.id === productId ? { ...item, quantity: Math.min(quantity, 99) } : item
-      )
+      prev.map((item) => {
+        if (item.id !== productId) return item;
+        const cap = maxQuantityForProduct(item);
+        return { ...item, quantity: Math.min(quantity, cap) };
+      }),
     );
   };
 
