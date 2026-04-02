@@ -89,7 +89,12 @@ export default function CartPage() {
                             variant="ghost"
                             size="icon-xs"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            disabled={item.quantity >= 99}
+                            disabled={
+                              item.stockQuantity !== undefined
+                                ? item.quantity >=
+                                  Math.min(99, Math.max(0, item.stockQuantity))
+                                : item.quantity >= 99
+                            }
                             className="rounded-full"
                           >
                             <Plus className="size-3" />

@@ -47,7 +47,7 @@ export function Navbar() {
       setProfileFullName(data?.full_name ?? null);
     }
 
-    const getUser = async () => {
+    const syncUser = async () => {
       const {
         data: { user: u },
       } = await supabase.auth.getUser();
@@ -56,7 +56,22 @@ export function Navbar() {
       else setProfileFullName(null);
     };
 
-    void getUser();
+    // 有些登入流程是「在同一路由重新導向」，可能不會觸發完整重載或 auth listener；
+    // 透過短時間輪詢 + 前景觸發 sync，可確保 Navbar 及時顯示登入狀態。
+    void syncUser();
+
+    let attempts = 0;
+    const interval = window.setInterval(() => {
+      attempts += 1;
+      void syncUser();
+      if (attempts >= 4) window.clearInterval(interval);
+    }, 800);
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void syncUser();
+    };
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
 
     const {
       data: { subscription },
@@ -67,7 +82,12 @@ export function Navbar() {
       else setProfileFullName(null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+      subscription.unsubscribe();
+    };
   }, [supabase]);
 
   return (
@@ -98,7 +118,7 @@ export function Navbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             size="icon"
