@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useSyncExternalStore } from "react";
 import type { Product } from "@/data/products";
 
 export interface CartItem extends Product {
@@ -24,48 +24,76 @@ function maxQuantityForProduct(product: Product): number {
   return Math.min(99, Math.max(0, product.stockQuantity));
 }
 
+let lastCartRaw: string | null = null;
+let lastCartParsed: CartItem[] = [];
+const EMPTY_CART: CartItem[] = [];
+
+function parseCartRaw(raw: string | null): CartItem[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as CartItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function readCartFromStorage(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  const raw = window.localStorage.getItem("cart");
+  if (raw === lastCartRaw) return lastCartParsed;
+  lastCartRaw = raw;
+  lastCartParsed = parseCartRaw(raw);
+  return lastCartParsed;
+}
+
+function writeCartToStorage(items: CartItem[]) {
+  const raw = JSON.stringify(items);
+  lastCartRaw = raw;
+  lastCartParsed = items;
+  window.localStorage.setItem("cart", raw);
+  window.dispatchEvent(new Event("cart-updated"));
+}
+
+function subscribeToCartChanges(callback: () => void) {
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === "cart") callback();
+  };
+  const onLocal = () => callback();
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("cart-updated", onLocal);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener("cart-updated", onLocal);
+  };
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      try {
-        setItems(JSON.parse(savedCart));
-      } catch (e) {
-        console.error("Failed to parse cart from localStorage", e);
-      }
-    }
-    setIsInitialized(true);
-  }, []);
-
-  // Save cart to localStorage whenever it changes
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem("cart", JSON.stringify(items));
-    }
-  }, [items, isInitialized]);
+  const items = useSyncExternalStore(
+    subscribeToCartChanges,
+    readCartFromStorage,
+    () => EMPTY_CART,
+  );
 
   const addItem = (product: Product, quantity = 1) => {
     const cap = maxQuantityForProduct(product);
     if (cap <= 0) return;
     const q = Math.min(Math.max(1, quantity), cap);
-    setItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        const nextQty = Math.min(existing.quantity + q, cap);
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: nextQty } : item,
-        );
-      }
-      return [...prev, { ...product, quantity: q }];
-    });
+    const prev = readCartFromStorage();
+    const existing = prev.find((item) => item.id === product.id);
+    if (existing) {
+      const nextQty = Math.min(existing.quantity + q, cap);
+      writeCartToStorage(
+        prev.map((it) => (it.id === product.id ? { ...it, quantity: nextQty } : it)),
+      );
+      return;
+    }
+    writeCartToStorage([...prev, { ...product, quantity: q }]);
   };
 
   const removeItem = (productId: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== productId));
+    const prev = readCartFromStorage();
+    writeCartToStorage(prev.filter((item) => item.id !== productId));
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -73,7 +101,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeItem(productId);
       return;
     }
-    setItems((prev) =>
+    const prev = readCartFromStorage();
+    writeCartToStorage(
       prev.map((item) => {
         if (item.id !== productId) return item;
         const cap = maxQuantityForProduct(item);
@@ -83,7 +112,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearCart = () => {
-    setItems([]);
+    writeCartToStorage([]);
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);

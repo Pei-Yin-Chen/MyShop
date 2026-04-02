@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/products/Breadcrumbs";
 import { ProductImageGallery } from "@/components/products/ProductImageGallery";
@@ -95,8 +94,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <Navbar />
-
       <main className="flex-grow bg-background">
         <div className="container mx-auto px-4 py-8 lg:py-12">
           <div className="mb-8">

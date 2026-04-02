@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { CheckCircle2, ShoppingBag, ArrowRight, MapPin, Calendar, CreditCard } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -68,7 +67,6 @@ export default async function SuccessPage({
   if (!orderId) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
-        <Navbar />
         <main className="flex-grow">
           <div className="container mx-auto px-4 py-16">
             <h1 className="text-2xl font-bold text-foreground">找不到訂單</h1>
@@ -114,7 +112,6 @@ export default async function SuccessPage({
   if (orderError || !order) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
-        <Navbar />
         <main className="flex-grow">
           <div className="container mx-auto px-4 py-16">
             <h1 className="text-2xl font-bold text-foreground">訂單資料不可取得</h1>
@@ -160,8 +157,6 @@ export default async function SuccessPage({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Navbar />
-
       <main className="flex-grow">
         <div className="container max-w-3xl mx-auto px-4 py-12 lg:py-20">
           <div className="text-center mb-12">

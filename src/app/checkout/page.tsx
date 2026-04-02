@@ -7,10 +7,10 @@ import { ChevronRight, CreditCard, Truck, User, ArrowLeft } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 type ShippingMethod = "home" | "store";
 type PaymentMethod = "credit" | "transfer" | "linepay";
@@ -27,6 +27,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
 
   // 用來避免成功下單後清空購物車導致本頁 useEffect 把路由又導回 /cart
   const redirectingToSuccessRef = useRef(false);
@@ -45,6 +46,47 @@ export default function CheckoutPage() {
     address: "",
   });
 
+  // Prefill from member profile (if available)
+  useEffect(() => {
+    let cancelled = false;
+    async function prefill() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("default_shipping_address, mobile_phone, full_name")
+        .eq("id", user.id)
+        .maybeSingle<{
+          default_shipping_address: string | null;
+          mobile_phone: string | null;
+          full_name: string | null;
+        }>();
+
+      setFormData((prev) => {
+        let next = prev;
+        const nameFromProfile = (data?.full_name ?? "").trim();
+        if (nameFromProfile && !next.name.trim()) next = { ...next, name: nameFromProfile };
+
+        const phoneDigits = (data?.mobile_phone ?? "").replace(/\D/g, "").trim();
+        if (phoneDigits && !next.phone.trim()) next = { ...next, phone: phoneDigits };
+
+        // Only prefill when the address field is relevant/visible and still empty.
+        if (shippingMethod === "home" && !next.address.trim()) {
+          const addr = data?.default_shipping_address?.trim() ?? "";
+          if (addr) next = { ...next, address: addr };
+        }
+        return next;
+      });
+    }
+    void prefill();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, shippingMethod, formData.address, formData.phone]);
+
   // 防止重新整理時 items 為空導致無法顯示
   useEffect(() => {
     if (items.length === 0 && !redirectingToSuccessRef.current) {
@@ -61,7 +103,8 @@ export default function CheckoutPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const nextValue = name === "phone" ? value.replace(/\D/g, "") : value;
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
 
     // 即時驗證邏輯（只針對目前已有錯誤的欄位）
     if (errors[name]) {
@@ -156,8 +199,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Navbar />
-
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-10 lg:py-16">
           <div className="mb-10">
@@ -221,7 +262,7 @@ export default function CheckoutPage() {
                             ? "border-destructive ring-2 ring-destructive/10"
                             : "border-border focus:ring-2 focus:ring-primary/20",
                         )}
-                        placeholder="0912-345-678"
+                        placeholder="0912345678"
                       />
                       {errors.phone && (
                         <p className="text-xs text-destructive animate-in fade-in slide-in-from-top-1 duration-200">

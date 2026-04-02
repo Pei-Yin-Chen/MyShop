@@ -17,6 +17,10 @@ type CheckoutFormData = {
   address: string;
 };
 
+function normalizePhone(input: string) {
+  return String(input ?? "").replace(/\D/g, "");
+}
+
 type ProductRow = {
   id: string;
   name: string;
@@ -148,6 +152,7 @@ export async function POST(req: Request) {
     const total = subtotal + shippingFee;
 
     const orderNumber = `ORD-${Date.now()}-${randomUUID().slice(0, 8)}`;
+    const phoneDigits = normalizePhone(formData.phone);
 
     const { data: orderRow, error: orderError } = await supabase
       .from("orders")
@@ -155,7 +160,7 @@ export async function POST(req: Request) {
         user_id: user.id,
         order_number: orderNumber,
         recipient_name: formData.name,
-        recipient_phone: formData.phone,
+        recipient_phone: phoneDigits,
         recipient_email: formData.email,
         shipping_address:
           normalizedShippingMethod === "home" ? formData.address : null,

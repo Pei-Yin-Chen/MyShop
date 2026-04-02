@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import type { Product } from "@/data/products";
@@ -35,6 +35,8 @@ export function ProductCatalog({ products }: { products: Product[] }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const sidebarKey = searchParams.toString();
+
   const q = useMemo(() => parseCatalogQuery(searchParams), [searchParams]);
   const { items, total, totalPages, page } = useMemo(
     () => getCatalogPage(products, q),
@@ -42,15 +44,9 @@ export function ProductCatalog({ products }: { products: Product[] }) {
   );
   const categories = useMemo(() => getCategoryNavItems(products), [products]);
 
-  const [minStr, setMinStr] = useState(() => searchParams.get("min") ?? "");
-  const [maxStr, setMaxStr] = useState(() => searchParams.get("max") ?? "");
-  const [searchStr, setSearchStr] = useState(() => searchParams.get("q") ?? "");
-
-  useEffect(() => {
-    setMinStr(searchParams.get("min") ?? "");
-    setMaxStr(searchParams.get("max") ?? "");
-    setSearchStr(searchParams.get("q") ?? "");
-  }, [searchParams]);
+  const minRef = useRef<HTMLInputElement | null>(null);
+  const maxRef = useRef<HTMLInputElement | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   function pushQuery(updates: Record<string, string | null | undefined>, resetPage = false) {
     const next = buildNextParams(searchParams, updates, resetPage);
@@ -79,24 +75,26 @@ export function ProductCatalog({ products }: { products: Product[] }) {
   }
 
   function applyPriceFilter() {
-    const min = minStr.trim() === "" ? null : minStr.trim();
-    const max = maxStr.trim() === "" ? null : maxStr.trim();
+    const minV = (minRef.current?.value ?? "").trim();
+    const maxV = (maxRef.current?.value ?? "").trim();
+    const min = minV === "" ? null : minV;
+    const max = maxV === "" ? null : maxV;
     pushQuery({ min: min ?? null, max: max ?? null }, true);
   }
 
   function clearPriceFilter() {
-    setMinStr("");
-    setMaxStr("");
+    if (minRef.current) minRef.current.value = "";
+    if (maxRef.current) maxRef.current.value = "";
     pushQuery({ min: null, max: null }, true);
   }
 
   function applySearch() {
-    const t = searchStr.trim().slice(0, 80);
+    const t = (searchRef.current?.value ?? "").trim().slice(0, 80);
     pushQuery({ q: t || null }, true);
   }
 
   function clearSearch() {
-    setSearchStr("");
+    if (searchRef.current) searchRef.current.value = "";
     pushQuery({ q: null }, true);
   }
 
@@ -118,7 +116,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
 
       <div className="lg:grid lg:grid-cols-[minmax(0,220px)_1fr] lg:gap-10 xl:grid-cols-[minmax(0,240px)_1fr]">
         {/* 側欄：分類導覽 + 篩選 */}
-        <aside className="mb-10 space-y-8 lg:mb-0">
+        <aside key={sidebarKey} className="mb-10 space-y-8 lg:mb-0">
           <section aria-labelledby="search-heading">
             <h2 id="search-heading" className="mb-3 text-sm font-semibold text-foreground">
               搜尋
@@ -128,8 +126,10 @@ export function ProductCatalog({ products }: { products: Product[] }) {
                 type="search"
                 enterKeyHint="search"
                 placeholder="商品名稱或描述…"
-                value={searchStr}
-                onChange={(e) => setSearchStr(e.target.value)}
+                defaultValue={searchParams.get("q") ?? ""}
+                ref={(el) => {
+                  searchRef.current = el;
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -199,7 +199,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
                   type="checkbox"
                   checked={q.featuredOnly}
                   onChange={(e) => toggleFeatured(e.target.checked)}
-                  className="size-4 rounded border-border text-primary focus-visible:ring-2 focus-visible:ring-ring"
+                  className="size-4 rounded border-border text-primary focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                 />
                 <span>只看主廚推薦</span>
               </label>
@@ -211,16 +211,20 @@ export function ProductCatalog({ products }: { products: Product[] }) {
                     type="number"
                     min={0}
                     placeholder="最低"
-                    value={minStr}
-                    onChange={(e) => setMinStr(e.target.value)}
+                    defaultValue={searchParams.get("min") ?? ""}
+                    ref={(el) => {
+                      minRef.current = el;
+                    }}
                     className="h-9 w-full min-w-0 rounded-lg border border-border bg-background px-2.5 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                   <input
                     type="number"
                     min={0}
                     placeholder="最高"
-                    value={maxStr}
-                    onChange={(e) => setMaxStr(e.target.value)}
+                    defaultValue={searchParams.get("max") ?? ""}
+                    ref={(el) => {
+                      maxRef.current = el;
+                    }}
                     className="h-9 w-full min-w-0 rounded-lg border border-border bg-background px-2.5 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                 </div>

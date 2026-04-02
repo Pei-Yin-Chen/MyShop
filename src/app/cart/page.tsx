@@ -6,7 +6,6 @@ import { Trash2, Minus, Plus, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
 export default function CartPage() {
@@ -14,8 +13,6 @@ export default function CartPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Navbar />
-      
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-10 lg:py-16">
           <div className="mb-8 flex items-center justify-between">

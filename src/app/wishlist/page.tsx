@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { WishlistContent } from "@/components/wishlist/WishlistContent";
 
@@ -11,7 +10,6 @@ export const metadata: Metadata = {
 export default function WishlistPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Navbar />
       <main className="flex-grow">
         <WishlistContent />
       </main>

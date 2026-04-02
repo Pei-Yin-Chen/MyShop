@@ -41,27 +41,30 @@ export function SortDropdown({
         </MenuPrimitive.Trigger>
 
         <MenuPrimitive.Portal>
-          <MenuPrimitive.Positioner className="z-50 pt-1" side="bottom" align="end">
+          <MenuPrimitive.Positioner className="z-[80] pt-1" side="bottom" align="end">
             <MenuPrimitive.Popup
+              data-ui="sort-dropdown-popup"
               className="min-w-[11rem] overflow-hidden rounded-xl border border-border bg-background p-1 shadow-lg shadow-black/5 animate-in fade-in zoom-in-95 duration-150 origin-top"
             >
-              {options.map((option) => (
-                <MenuPrimitive.Item
-                  key={option.value}
-                  onClick={() => onValueChange(option.value)}
-                  className={cn(
-                    "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-sm outline-none transition-colors hover:bg-primary/10 hover:text-primary",
-                    value === option.value && "font-medium text-primary bg-primary/5"
-                  )}
-                >
-                  {option.label}
-                  {value === option.value && (
-                    <span className="absolute right-3 flex items-center justify-center">
-                      <Check className="size-4" />
-                    </span>
-                  )}
-                </MenuPrimitive.Item>
-              ))}
+              <div className="max-h-72 overflow-auto overscroll-contain">
+                {options.map((option) => (
+                  <MenuPrimitive.Item
+                    key={option.value}
+                    onClick={() => onValueChange(option.value)}
+                    className={cn(
+                      "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-sm outline-none transition-colors hover:bg-primary/10 hover:text-primary",
+                      value === option.value && "font-medium text-primary bg-primary/5"
+                    )}
+                  >
+                    {option.label}
+                    {value === option.value && (
+                      <span className="absolute right-3 flex items-center justify-center">
+                        <Check className="size-4" />
+                      </span>
+                    )}
+                  </MenuPrimitive.Item>
+                ))}
+              </div>
             </MenuPrimitive.Popup>
           </MenuPrimitive.Positioner>
         </MenuPrimitive.Portal>

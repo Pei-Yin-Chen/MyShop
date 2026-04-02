@@ -1,4 +1,3 @@
-import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { ProductGallery } from "@/components/ProductGallery";
@@ -16,7 +15,6 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar />
       <main className="flex-grow">
         <Hero content={home.hero} />
         <FeaturedProducts products={featuredProducts} intro={home.featured_intro} />
