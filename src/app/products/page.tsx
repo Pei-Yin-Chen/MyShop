@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProductCatalog } from "@/components/products/ProductCatalog";
+import { fetchProductsForCatalog } from "@/lib/supabase/fetch-products";
 
 export const metadata: Metadata = {
   title: "所有商品 · My Pâtisserie",
@@ -17,13 +18,18 @@ function CatalogFallback() {
   );
 }
 
+async function CatalogSection() {
+  const products = await fetchProductsForCatalog();
+  return <ProductCatalog products={products} />;
+}
+
 export default function ProductsPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-grow">
         <Suspense fallback={<CatalogFallback />}>
-          <ProductCatalog />
+          <CatalogSection />
         </Suspense>
       </main>
       <Footer />

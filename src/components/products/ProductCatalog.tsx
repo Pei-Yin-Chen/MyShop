@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
+import type { Product } from "@/data/products";
 import {
   getCatalogPage,
   getCategoryNavItems,
@@ -29,14 +30,17 @@ function buildNextParams(
   return next;
 }
 
-export function ProductCatalog() {
+export function ProductCatalog({ products }: { products: Product[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const q = useMemo(() => parseCatalogQuery(searchParams), [searchParams]);
-  const { items, total, totalPages, page } = useMemo(() => getCatalogPage(q), [q]);
-  const categories = useMemo(() => getCategoryNavItems(), []);
+  const { items, total, totalPages, page } = useMemo(
+    () => getCatalogPage(products, q),
+    [products, q],
+  );
+  const categories = useMemo(() => getCategoryNavItems(products), [products]);
 
   const [minStr, setMinStr] = useState(() => searchParams.get("min") ?? "");
   const [maxStr, setMaxStr] = useState(() => searchParams.get("max") ?? "");

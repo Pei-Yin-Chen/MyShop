@@ -4,13 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { products } from "@/data/products";
+import type { FeaturedIntroContent } from "@/data/home-page-defaults";
+import type { Product } from "@/data/products";
 import { useCart } from "@/lib/cart-context";
 
-export function FeaturedProducts() {
+export function FeaturedProducts({
+  products,
+  intro,
+}: {
+  products: Product[];
+  intro: FeaturedIntroContent;
+}) {
   const featured = products.filter((p) => p.isFeatured);
   const { addItem } = useCart();
 
@@ -19,12 +25,10 @@ export function FeaturedProducts() {
       <div className="container mx-auto px-4">
         <div className="mb-16 flex flex-col items-center text-center">
           <h2 className="mb-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            主廚推薦
+            {intro.title}
           </h2>
           <div className="mb-5 h-px w-16 bg-primary/40" />
-          <p className="max-w-xl text-muted-foreground">
-            當日爐邊精選，蛋糕與麵包皆以細緻工法完成，適合與重要的人分享。
-          </p>
+          <p className="max-w-xl text-muted-foreground">{intro.subtitle}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,9 +96,9 @@ export function FeaturedProducts() {
             size="lg"
             nativeButton={false}
             className="rounded-full border-border px-10 font-medium"
-            render={<Link href="/products" />}
+            render={<Link href={intro.browseAllHref} />}
           >
-            瀏覽所有品項
+            {intro.browseAllLabel}
           </Button>
         </div>
       </div>

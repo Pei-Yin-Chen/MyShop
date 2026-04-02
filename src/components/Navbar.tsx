@@ -49,6 +49,9 @@ export function Navbar() {
             <Link href="/products?category=麵包" className="transition-colors hover:text-foreground">
               麵包
             </Link>
+            <Link href="/products?category=甜點" className="transition-colors hover:text-foreground">
+              甜點
+            </Link>
             <Link href="/about" className="transition-colors hover:text-foreground">
               關於我們
             </Link>
@@ -103,6 +106,7 @@ export function Navbar() {
                 <Link href="/products">所有商品</Link>
                 <Link href="/products?category=蛋糕">蛋糕</Link>
                 <Link href="/products?category=麵包">麵包</Link>
+                <Link href="/products?category=甜點">甜點</Link>
                 <Link href="/about">關於我們</Link>
                 {user ? (
                   <>

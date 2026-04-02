@@ -1,5 +1,4 @@
 import type { Product } from "@/data/products";
-import { products as allProducts } from "@/data/products";
 
 export const PAGE_SIZE = 6;
 
@@ -21,8 +20,8 @@ export interface CatalogQuery {
 
 const CATEGORY_ORDER = ["蛋糕", "麵包", "甜點"] as const;
 
-export function getCategoryNavItems(): string[] {
-  const set = new Set(allProducts.map((p) => p.category));
+export function getCategoryNavItems(products: Product[]): string[] {
+  const set = new Set(products.map((p) => p.category));
   const ordered = CATEGORY_ORDER.filter((c) => set.has(c));
   const orderSet = new Set<string>(CATEGORY_ORDER);
   const rest = [...set].filter((c) => !orderSet.has(c));
@@ -119,13 +118,13 @@ export function paginate<T>(list: T[], page: number, pageSize: number): { items:
   return { items, total, totalPages };
 }
 
-export function getCatalogPage(q: CatalogQuery): {
+export function getCatalogPage(products: Product[], q: CatalogQuery): {
   items: Product[];
   total: number;
   totalPages: number;
   page: number;
 } {
-  const filtered = filterProducts(allProducts, q);
+  const filtered = filterProducts(products, q);
   const sorted = sortProducts(filtered, q.sort);
   const { items, total, totalPages } = paginate(sorted, q.page, PAGE_SIZE);
   const page = Math.min(Math.max(1, q.page), totalPages);
