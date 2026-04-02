@@ -88,7 +88,7 @@ export function WishlistContent() {
       ) : ids.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-muted/20 py-20 text-center">
           <div className="mb-4 rounded-full bg-muted p-4">
-            <Heart className="size-8 text-muted-foreground" />
+            <Heart className="size-8 text-muted-foreground" aria-hidden />
           </div>
           <h2 className="mb-2 text-xl font-semibold text-foreground">願望清單是空的</h2>
           <p className="mb-8 max-w-sm text-muted-foreground">

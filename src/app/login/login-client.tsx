@@ -159,8 +159,14 @@ export default function LoginClient() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  aria-label={showPassword ? "隱藏密碼" : "顯示密碼"}
+                  title={showPassword ? "隱藏密碼" : "顯示密碼"}
                 >
-                  {showPassword ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                  {showPassword ? (
+                    <Eye className="size-4" aria-hidden />
+                  ) : (
+                    <EyeOff className="size-4" aria-hidden />
+                  )}
                 </button>
               </div>
               {errors.password && (

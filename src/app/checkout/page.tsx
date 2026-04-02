@@ -499,7 +499,7 @@ export default function CheckoutPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="w-full text-muted-foreground rounded-full"
+                  className="w-full rounded-full text-muted-foreground hover:text-foreground"
                   nativeButton={false}
                   render={<Link href="/cart" />}
                 >

@@ -55,10 +55,14 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
 
 export default async function MemberOrdersPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: orders, error } = await supabase
     .from("orders")
     .select("id, order_number, created_at, total, status")
+    .eq("user_id", user?.id ?? "")
     .order("created_at", { ascending: false })
     .returns<OrderListRow[]>();
 

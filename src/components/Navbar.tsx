@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/lib/cart-context";
 import { readWishlistIds } from "@/lib/wishlist-storage";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/app/auth/actions";
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -34,6 +34,30 @@ export function Navbar() {
   const [authLoaded, setAuthLoaded] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
+  const syncUser = useCallback(async () => {
+    try {
+      // Server Action 登入只會寫入 cookie，瀏覽器 singleton 不會收到 onAuthStateChange；
+      // 先從 cookie 讀回 session，再 getUser，避免導回首頁後仍顯示「登入/註冊」。
+      await supabase.auth.getSession();
+      const {
+        data: { user: u },
+      } = await supabase.auth.getUser();
+      setUser(u);
+      if (u) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", u.id)
+          .maybeSingle();
+        setProfileFullName(data?.full_name ?? null);
+      } else {
+        setProfileFullName(null);
+      }
+    } finally {
+      setAuthLoaded(true);
+    }
+  }, [supabase]);
+
   useEffect(() => {
     const refreshWishlist = () => setWishCount(readWishlistIds().length);
     refreshWishlist();
@@ -45,31 +69,12 @@ export function Navbar() {
     };
   }, []);
 
+  // 換頁後（例如 /login → /）強制與 cookie 同步
   useEffect(() => {
-    async function loadProfile(uid: string) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", uid)
-        .maybeSingle();
-      setProfileFullName(data?.full_name ?? null);
-    }
+    void syncUser();
+  }, [pathname, syncUser]);
 
-    const syncUser = async () => {
-      try {
-        const {
-          data: { user: u },
-        } = await supabase.auth.getUser();
-        setUser(u);
-        if (u) await loadProfile(u.id);
-        else {
-          setProfileFullName(null);
-        }
-      } finally {
-        setAuthLoaded(true);
-      }
-    };
-
+  useEffect(() => {
     // 有些登入流程是「在同一路由重新導向」，可能不會觸發完整重載或 auth listener；
     // 透過短時間輪詢 + 前景觸發 sync，可確保 Navbar 及時顯示登入狀態。
     void syncUser();
@@ -93,8 +98,14 @@ export function Navbar() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       const next = session?.user ?? null;
       setUser(next);
-      if (next) void loadProfile(next.id);
-      else {
+      if (next) {
+        void supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", next.id)
+          .maybeSingle()
+          .then(({ data }) => setProfileFullName(data?.full_name ?? null));
+      } else {
         setProfileFullName(null);
       }
       setAuthLoaded(true);
@@ -107,7 +118,7 @@ export function Navbar() {
       window.removeEventListener("profile-updated", onVisible);
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, syncUser]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -155,8 +166,9 @@ export function Navbar() {
             nativeButton={false}
             render={<Link href="/wishlist" />}
             aria-label={wishCount > 0 ? `願望清單，${wishCount} 項` : "願望清單"}
+            title={wishCount > 0 ? `願望清單（${wishCount} 項）` : "願望清單"}
           >
-            <Heart className="h-5 w-5" />
+            <Heart className="h-5 w-5" aria-hidden />
             {wishCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
                 {wishCount > 99 ? "99+" : wishCount}
@@ -164,8 +176,16 @@ export function Navbar() {
             )}
           </Button>
 
-          <Button variant="ghost" size="icon" className="relative text-muted-foreground" nativeButton={false} render={<Link href="/cart" />}>
-            <ShoppingCart className="h-5 w-5" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative text-muted-foreground"
+            nativeButton={false}
+            render={<Link href="/cart" />}
+            aria-label={totalItems > 0 ? `購物車，${totalItems} 件商品` : "購物車"}
+            title={totalItems > 0 ? `購物車（${totalItems} 件）` : "購物車"}
+          >
+            <ShoppingCart className="h-5 w-5" aria-hidden />
             {totalItems > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
                 {totalItems}
@@ -181,7 +201,7 @@ export function Navbar() {
               aria-label="載入會員狀態中"
               title="載入中…"
             >
-              <User className="h-5 w-5" />
+              <User className="h-5 w-5" aria-hidden />
             </Button>
           ) : user ? (
             <>
@@ -192,8 +212,9 @@ export function Navbar() {
                 nativeButton={false}
                 render={<Link href="/member" />}
                 aria-label="會員中心"
+                title="會員中心"
               >
-                <User className="h-5 w-5" />
+                <User className="h-5 w-5" aria-hidden />
               </Button>
               <Button
                 variant="ghost"
@@ -203,7 +224,7 @@ export function Navbar() {
                 aria-label="登出"
                 title="登出"
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="h-5 w-5" aria-hidden />
               </Button>
             </>
           ) : (
@@ -222,8 +243,10 @@ export function Navbar() {
                 className="cursor-pointer text-muted-foreground sm:hidden"
                 nativeButton={false}
                 render={<Link href="/login" />}
+                aria-label="登入或註冊"
+                title="登入或註冊"
               >
-                <User className="h-5 w-5" />
+                <User className="h-5 w-5" aria-hidden />
               </Button>
             </div>
           )}
@@ -238,7 +261,7 @@ export function Navbar() {
                   aria-label="開啟選單"
                   title="開啟選單"
                 >
-                  <Menu className="h-5 w-5" />
+                  <Menu className="h-5 w-5" aria-hidden />
                 </Button>
               }
             />

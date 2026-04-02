@@ -173,8 +173,9 @@ export function ProductInfo({ product }: { product: Product }) {
               disabled={outOfStock || quantity <= 1}
               className="rounded-full"
               aria-label="減少數量"
+              title="減少數量"
             >
-              <Minus className="size-3.5" />
+              <Minus className="size-3.5" aria-hidden />
             </Button>
             <span className="w-10 text-center font-medium tabular-nums">{quantity}</span>
             <Button
@@ -185,8 +186,9 @@ export function ProductInfo({ product }: { product: Product }) {
               disabled={outOfStock || quantity >= maxSelectable}
               className="rounded-full"
               aria-label="增加數量"
+              title="增加數量"
             >
-              <Plus className="size-3.5" />
+              <Plus className="size-3.5" aria-hidden />
             </Button>
           </div>
 
@@ -197,7 +199,7 @@ export function ProductInfo({ product }: { product: Product }) {
             disabled={outOfStock}
             onClick={() => addItem(product, quantity)}
           >
-            <ShoppingCart className="mr-2 size-4" />
+            <ShoppingCart className="mr-2 size-4" aria-hidden />
             {outOfStock ? "暫無庫存" : "加入購物車"}
           </Button>
         </div>

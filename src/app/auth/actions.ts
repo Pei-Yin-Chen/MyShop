@@ -80,6 +80,10 @@ export async function signInWithGoogle() {
     provider: 'google',
     options: {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+      // 每次都顯示 Google 帳號選擇器，方便同一台裝置換不同使用者登入（否則常會自動用上一個帳號）
+      queryParams: {
+        prompt: 'select_account',
+      },
     },
   })
 

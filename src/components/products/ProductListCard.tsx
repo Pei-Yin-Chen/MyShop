@@ -61,11 +61,7 @@ export function ProductListCard({
           }}
           title={isWishlisted ? "移除願望清單" : "加入願望清單"}
         >
-          <Heart
-            className="size-4"
-            fill={hydrated && isWishlisted ? "currentColor" : "none"}
-            aria-hidden
-          />
+          <Heart className="size-4" fill={hydrated && isWishlisted ? "currentColor" : "none"} aria-hidden />
         </Button>
       </CardContent>
       <CardFooter className="flex flex-col items-stretch gap-3 border-t-0 bg-transparent p-4 pt-3">
@@ -95,7 +91,7 @@ export function ProductListCard({
               onClick={() => addItem(product)}
               aria-label={outOfStock ? "暫無庫存" : "加入購物車"}
             >
-              <ShoppingCart className="size-3.5" />
+              <ShoppingCart className="size-3.5" aria-hidden />
             </Button>
           </div>
         </div>

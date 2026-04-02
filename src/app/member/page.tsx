@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,10 +56,14 @@ function formatDate(iso: string) {
 
 export default async function MemberIndexPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: orders } = await supabase
     .from("orders")
     .select("id, order_number, created_at, total, status")
+    .eq("user_id", user?.id ?? "")
     .order("created_at", { ascending: false })
     .limit(3)
     .returns<OrderRow[]>();
@@ -104,11 +109,12 @@ export default async function MemberIndexPage() {
           <div className="pt-2">
             <Button
               variant="ghost"
-              className="px-0 text-primary hover:text-primary hover:bg-transparent"
+              className="rounded-full text-muted-foreground hover:text-foreground"
               nativeButton={false}
               render={<Link href="/member/orders" />}
             >
-              查看全部訂單 →
+              查看全部訂單
+              <ArrowRight className="ml-2 size-4" aria-hidden />
             </Button>
           </div>
         </CardContent>

@@ -107,6 +107,9 @@ export default async function MemberOrderDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
@@ -114,6 +117,7 @@ export default async function MemberOrderDetailPage({
       "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes",
     )
     .eq("id", id)
+    .eq("user_id", user?.id ?? "")
     .maybeSingle<OrderRow>();
 
   if (orderError) {

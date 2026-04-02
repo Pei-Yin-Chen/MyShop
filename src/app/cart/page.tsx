@@ -76,8 +76,10 @@ export default function CartPage() {
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             disabled={item.quantity <= 1}
                             className="rounded-full"
+                            aria-label={`減少「${item.name}」數量`}
+                            title="減少數量"
                           >
-                            <Minus className="size-3" />
+                            <Minus className="size-3" aria-hidden />
                           </Button>
                           <span className="w-8 text-center text-sm font-medium tabular-nums">
                             {item.quantity}
@@ -93,8 +95,10 @@ export default function CartPage() {
                                 : item.quantity >= 99
                             }
                             className="rounded-full"
+                            aria-label={`增加「${item.name}」數量`}
+                            title="增加數量"
                           >
-                            <Plus className="size-3" />
+                            <Plus className="size-3" aria-hidden />
                           </Button>
                         </div>
                       </div>
@@ -111,8 +115,10 @@ export default function CartPage() {
                           size="icon-sm"
                           onClick={() => removeItem(item.id)}
                           className="rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          aria-label={`從購物車移除「${item.name}」`}
+                          title="移除此商品"
                         >
-                          <Trash2 className="size-4" />
+                          <Trash2 className="size-4" aria-hidden />
                         </Button>
                       </div>
                     </li>
