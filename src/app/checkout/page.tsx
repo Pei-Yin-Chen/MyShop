@@ -10,7 +10,15 @@ import React, {
 } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight, CreditCard, Truck, User, ArrowLeft, StickyNote } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  CreditCard,
+  Loader2,
+  StickyNote,
+  Truck,
+  User,
+} from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -406,6 +414,16 @@ function CheckoutPageInner() {
   const showEmptyWithoutCart =
     items.length === 0 &&
     (Boolean(payReturnCode) || payuniAwaitReturn || recentPayRedirect);
+
+  /** 送出後、POST 至 PAYUNi 前：勿顯示空購物車「已前往付款」卡（會像多一頁）；改全螢幕前往中 */
+  if (pendingPayuniNav) {
+    return (
+      <div className="fixed inset-0 z-[100] flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+        <Loader2 className="size-10 animate-spin text-primary" aria-hidden />
+        <p className="text-sm font-medium text-foreground">正在前往統一金流付款頁…</p>
+      </div>
+    );
+  }
 
   if (items.length === 0 && !showEmptyWithoutCart) return null;
 

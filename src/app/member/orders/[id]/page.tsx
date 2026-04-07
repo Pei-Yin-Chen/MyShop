@@ -11,6 +11,7 @@ import type { PayuniPaymentDetailStored } from "@/lib/payuni/payment-detail";
 import { PayuniPaymentDetailSection } from "@/components/PayuniPaymentDetailSection";
 import { PayuniResumePaymentButton } from "@/components/PayuniResumePaymentButton";
 import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
+import { shouldOfferPayuniResumePayment } from "@/lib/payuni/should-offer-resume-payment";
 
 const IMAGE_PLACEHOLDER =
   "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=800";
@@ -175,7 +176,12 @@ export default async function MemberOrderDetailPage({
         </div>
       </div>
 
-      {order.status === "pending" && isPayuniPendingOrder(order.notes) ? (
+      {order.status === "pending" &&
+      isPayuniPendingOrder(order.notes) &&
+      shouldOfferPayuniResumePayment(
+        order.payuni_payment_type,
+        order.payuni_payment_detail,
+      ) ? (
         <Card className="border-amber-200/80 bg-amber-50/40 dark:border-amber-900/45 dark:bg-amber-950/25">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground">
@@ -300,9 +306,9 @@ export default async function MemberOrderDetailPage({
             </CardContent>
           </Card>
         )}
-      </div>
 
-      <PayuniPaymentDetailSection detail={order.payuni_payment_detail} />
+        <PayuniPaymentDetailSection detail={order.payuni_payment_detail} />
+      </div>
     </div>
   );
 }

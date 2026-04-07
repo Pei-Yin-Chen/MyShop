@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   type PayuniPaymentDetailStored,
   shouldShowPayuniOfflinePaymentDetail,
@@ -18,9 +19,11 @@ function Row({ label, value }: { label: string; value: string }) {
 export function PayuniPaymentDetailSection({
   detail,
   title = "繳費資訊（統一金流）",
+  className,
 }: {
   detail: PayuniPaymentDetailStored | null | undefined;
   title?: string;
+  className?: string;
 }) {
   if (!detail || !shouldShowPayuniOfflinePaymentDetail(detail)) return null;
 
@@ -29,7 +32,12 @@ export function PayuniPaymentDetailSection({
   const kindLabel = isCvs ? "超商代碼繳費" : "ATM 虛擬帳號";
 
   return (
-    <Card className="border-border/60 shadow-sm border-amber-500/30 bg-amber-500/[0.06]">
+    <Card
+      className={cn(
+        "border-border/60 shadow-sm border-amber-500/30 bg-amber-500/[0.06]",
+        className,
+      )}
+    >
       <CardHeader className="space-y-1 pb-2">
         <CardTitle className="text-base font-semibold">{title}</CardTitle>
         <p className="text-xs text-muted-foreground">{kindLabel}</p>

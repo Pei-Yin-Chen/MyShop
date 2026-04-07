@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PayuniResumePaymentButton } from "@/components/PayuniResumePaymentButton";
 import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
+import { shouldOfferPayuniResumePayment } from "@/lib/payuni/should-offer-resume-payment";
 
 const IMAGE_PLACEHOLDER =
   "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=800";
@@ -218,7 +219,12 @@ export default async function PaymentFailedPage({
                   </div>
                 </div>
 
-                {order.status === "pending" && isPayuniPendingOrder(order.notes) ? (
+                {order.status === "pending" &&
+                isPayuniPendingOrder(order.notes) &&
+                shouldOfferPayuniResumePayment(
+                  order.payuni_payment_type,
+                  order.payuni_payment_detail,
+                ) ? (
                   <div className="rounded-lg border border-amber-200/80 bg-amber-50/40 dark:border-amber-900/45 dark:bg-amber-950/25 px-4 py-3 space-y-3">
                     <p className="text-sm text-foreground">
                       若要重新開啟統一金流付款頁，請點下方按鈕。

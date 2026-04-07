@@ -1,3 +1,5 @@
+import { computePayuniExpireDateYyyyMmDd } from "@/lib/payuni/expire-date";
+
 function trimEnv(v: string | undefined): string {
   return String(v ?? "").trim();
 }
@@ -38,11 +40,14 @@ export function getPayuniConfig(): PayuniConfig | null {
   return { merId, hashKey, hashIv, sandbox, apiVersion, uppUrl };
 }
 
-/** UPP EncryptInfo 選填：繳費截止日 YYYY-MM-DD、ATM 銀行代碼（逗號分隔），見 PAYUNi 文件 */
+/**
+ * UPP EncryptInfo 選填：繳費截止日 YYYY-MM-DD、ATM 銀行代碼（逗號分隔），見 PAYUNi 文件。
+ * `ExpireDate`：未設定 `PAYUNI_EXPIRE_DATE` 時，依台北時區與「當日剩餘不足 2 小時則隔日」自動計算。
+ */
 export function getPayuniUppOptionalEncryptFields(): Record<string, string> {
   const out: Record<string, string> = {};
-  const expireDate = trimEnv(process.env.PAYUNI_EXPIRE_DATE);
-  if (expireDate) out.ExpireDate = expireDate;
+  const expireDateOverride = trimEnv(process.env.PAYUNI_EXPIRE_DATE);
+  out.ExpireDate = expireDateOverride || computePayuniExpireDateYyyyMmDd();
   const atmBankType = trimEnv(process.env.PAYUNI_ATM_BANK_TYPES);
   if (atmBankType) out.AtmBankType = atmBankType;
   return out;
