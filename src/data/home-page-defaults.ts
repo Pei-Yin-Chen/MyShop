@@ -5,16 +5,7 @@ import {
 } from "@/data/remote-images";
 import { shopImages } from "@/data/remote-images";
 
-/** 與 DB `home_page_sections.section_key` 對應 */
-export const HOME_SECTION_KEYS = [
-  "hero",
-  "featured_intro",
-  "product_gallery",
-  "brand_philosophy",
-  "shopping_rules",
-] as const;
-
-export type HomeSectionKey = (typeof HOME_SECTION_KEYS)[number];
+/** 首頁區塊 `section_key` 與 DB `home_page_sections.section_key` 對應：hero、featured_intro、product_gallery、brand_philosophy、shopping_rules */
 
 export interface HeroSectionContent {
   eyebrow: string;

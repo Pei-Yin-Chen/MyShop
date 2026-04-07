@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,14 +12,6 @@ type OrderListRow = {
   total: number;
   status: string;
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("zh-TW", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
 
 function statusLabel(status: string) {
   switch (status) {
@@ -100,7 +93,7 @@ export default async function MemberOrdersPage() {
               <thead className="bg-muted/30 border-b border-border/60 text-muted-foreground font-medium">
                 <tr>
                   <th className="px-4 py-3">訂單編號</th>
-                  <th className="px-4 py-3">日期</th>
+                  <th className="px-4 py-3">訂單日期</th>
                   <th className="px-4 py-3">狀態</th>
                   <th className="px-4 py-3 text-right">金額</th>
                   <th className="px-4 py-3 text-right">操作</th>
@@ -113,7 +106,7 @@ export default async function MemberOrdersPage() {
                       #{o.order_number}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {formatDate(o.created_at)}
+                      {formatOrderDateTimeZh(o.created_at)}
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={statusVariant(o.status)}>{statusLabel(o.status)}</Badge>

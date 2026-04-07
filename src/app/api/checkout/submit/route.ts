@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { randomUUID } from "crypto";
+import { getAppBaseUrl, getPayuniConfig, getPayuniUppOptionalEncryptFields } from "@/lib/payuni/config";
+import { generateMerTradeNo } from "@/lib/payuni/mer-trade-no";
+import { buildUppPostBody } from "@/lib/payuni/upp";
 
 type ShippingMethod = "home" | "store";
-type PaymentMethod = "credit" | "transfer" | "linepay";
 
 type CheckoutItem = {
   id: string;
@@ -15,7 +16,17 @@ type CheckoutFormData = {
   phone: string;
   email: string;
   address: string;
+  orderNote?: string;
 };
+
+/** 與結帳頁 maxLength 一致 */
+const MAX_CUSTOMER_NOTE_LENGTH = 500;
+
+function sanitizeCustomerNote(input: string | undefined): string | null {
+  const t = input?.trim() ?? "";
+  if (!t) return null;
+  return t.slice(0, MAX_CUSTOMER_NOTE_LENGTH);
+}
 
 function normalizePhone(input: string) {
   return String(input ?? "").replace(/\D/g, "");
@@ -36,12 +47,10 @@ export async function POST(req: Request) {
 
     const {
       shippingMethod,
-      paymentMethod,
       formData,
       items,
     }: {
       shippingMethod: ShippingMethod;
-      paymentMethod: PaymentMethod;
       formData: CheckoutFormData;
       items: CheckoutItem[];
     } = await req.json();
@@ -67,7 +76,6 @@ export async function POST(req: Request) {
 
     const normalizedShippingMethod: ShippingMethod =
       shippingMethod === "store" ? "store" : "home";
-    const normalizedPaymentMethod: PaymentMethod = paymentMethod;
 
     const itemIds = Array.from(
       new Set(items.map((i) => i.id)),
@@ -151,7 +159,19 @@ export async function POST(req: Request) {
           : 150;
     const total = subtotal + shippingFee;
 
-    const orderNumber = `ORD-${Date.now()}-${randomUUID().slice(0, 8)}`;
+    const payuniCfg = getPayuniConfig();
+    if (!payuniCfg) {
+      return NextResponse.json(
+        {
+          error:
+            "尚未設定 PAYUNi（請設定 PAYUNI_MER_ID、PAYUNI_HASH_KEY、PAYUNI_HASH_IV）",
+        },
+        { status: 503 },
+      );
+    }
+
+    const orderNumber = generateMerTradeNo();
+
     const phoneDigits = normalizePhone(formData.phone);
 
     const { data: orderRow, error: orderError } = await supabase
@@ -159,6 +179,7 @@ export async function POST(req: Request) {
       .insert({
         user_id: user.id,
         order_number: orderNumber,
+        payuni_mer_trade_no: orderNumber,
         recipient_name: formData.name,
         recipient_phone: phoneDigits,
         recipient_email: formData.email,
@@ -168,10 +189,9 @@ export async function POST(req: Request) {
         shipping_fee: shippingFee,
         subtotal,
         total,
-        // 目前為前台「模擬支付」：直接標記 paid，讓 success 頁能看到正確狀態
-        status: "paid",
-        // notes 可依 paymentMethod 擴充
-        notes: `payment=${normalizedPaymentMethod}`,
+        status: "pending",
+        notes: "payment=payuni",
+        customer_note: sanitizeCustomerNote(formData.orderNote),
       })
       .select("id")
       .single();
@@ -243,7 +263,52 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ orderId });
+    const base = getAppBaseUrl();
+    /** 付款頁「返回商店」導向（勿用空購物車 /cart，改為引導至訂單說明） */
+    const payuniBackUrl = `${base}/checkout/payuni-back?orderId=${encodeURIComponent(orderId)}`;
+
+    const prodDescRaw = orderItemsPayload
+      .map((oi) => `${oi.product_name} * ${oi.quantity}`)
+      .join(";");
+    const prodDesc =
+      prodDescRaw.length > 550 ? prodDescRaw.slice(0, 550) : prodDescRaw;
+
+    const encryptFields = {
+      MerID: payuniCfg.merId,
+      MerTradeNo: orderNumber,
+      TradeAmt: total,
+      Timestamp: Math.floor(Date.now() / 1000),
+      /** 付款頁交易截止秒數（文件 60–600，未帶則預設 600）；明確帶入避免與後台預設解讀不一致 */
+      TradeLExpireSec: 600,
+      ProdDesc: prodDesc,
+      ReturnURL: `${base}/api/payuni/return`,
+      NotifyURL: `${base}/api/payuni/notify`,
+      BackURL: payuniBackUrl,
+      UsrMail: formData.email,
+      Lang: "zh-tw",
+      ...getPayuniUppOptionalEncryptFields(),
+    };
+
+    try {
+      const payuni = buildUppPostBody(payuniCfg, encryptFields);
+      return NextResponse.json({
+        orderId,
+        payuni: {
+          actionUrl: payuniCfg.uppUrl,
+          fields: payuni,
+        },
+      });
+    } catch (e) {
+      return NextResponse.json(
+        {
+          error:
+            e instanceof Error
+              ? e.message
+              : "建立 PAYUNi 付款資料失敗",
+        },
+        { status: 500 },
+      );
+    }
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Unknown error" },

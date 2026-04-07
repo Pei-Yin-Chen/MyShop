@@ -6,6 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatPayuniPaymentTypeForDisplay } from "@/lib/payuni/payment-channel";
+import type { PayuniPaymentDetailStored } from "@/lib/payuni/payment-detail";
+import { PayuniPaymentDetailSection } from "@/components/PayuniPaymentDetailSection";
+import { PayuniResumePaymentButton } from "@/components/PayuniResumePaymentButton";
+import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
 
 const IMAGE_PLACEHOLDER =
   "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=800";
@@ -24,6 +29,9 @@ type OrderRow = {
   recipient_phone: string;
   recipient_email: string;
   notes: string | null;
+  customer_note: string | null;
+  payuni_payment_type: string | null;
+  payuni_payment_detail: PayuniPaymentDetailStored | null;
 };
 
 type OrderItemRow = {
@@ -34,21 +42,14 @@ type OrderItemRow = {
   image_url: string | null;
 };
 
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("zh-TW", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 function paymentLabelFromNotes(notes: string | null): string | null {
   const t = notes?.trim() ?? "";
   if (!t.startsWith("payment=")) return null;
-  const method = t.slice("payment=".length).trim();
+  const firstLine = t.split(/\r?\n/, 1)[0]?.trim() ?? "";
+  const method = firstLine.slice("payment=".length).trim();
   switch (method) {
+    case "payuni":
+      return "PAYUNi 線上付款";
     case "credit":
       return "信用卡 / 簽帳金融卡";
     case "transfer":
@@ -63,8 +64,11 @@ function paymentLabelFromNotes(notes: string | null): string | null {
 function userNoteFromNotes(notes: string | null): string | null {
   const t = notes?.trim() ?? "";
   if (!t) return null;
-  if (t.startsWith("payment=")) return null;
-  return t;
+  if (!t.startsWith("payment=")) return t;
+  const nl = t.search(/\r?\n/);
+  if (nl === -1) return null;
+  const rest = t.slice(nl).replace(/^\r?\n+/, "").trim();
+  return rest || null;
 }
 
 function statusLabel(status: string) {
@@ -84,6 +88,11 @@ function statusLabel(status: string) {
     default:
       return status;
   }
+}
+
+function isPayuniPendingOrder(notes: string | null): boolean {
+  const first = notes?.trim().split(/\r?\n/, 1)[0]?.trim() ?? "";
+  return first === "payment=payuni";
 }
 
 function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
@@ -114,7 +123,7 @@ export default async function MemberOrderDetailPage({
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select(
-      "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes",
+      "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes, customer_note, payuni_payment_type, payuni_payment_detail",
     )
     .eq("id", id)
     .eq("user_id", user?.id ?? "")
@@ -136,8 +145,11 @@ export default async function MemberOrderDetailPage({
     .returns<OrderItemRow[]>();
 
   const safeItems = items ?? [];
-  const paymentLabel = paymentLabelFromNotes(order.notes);
-  const userNote = userNoteFromNotes(order.notes);
+  const paymentLabel =
+    formatPayuniPaymentTypeForDisplay(order.payuni_payment_type) ??
+    paymentLabelFromNotes(order.notes);
+  const userNote =
+    order.customer_note?.trim() || userNoteFromNotes(order.notes);
 
   return (
     <div className="space-y-6">
@@ -147,7 +159,7 @@ export default async function MemberOrderDetailPage({
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             <span className="font-medium text-foreground/90">#{order.order_number}</span>
             <span className="hidden sm:inline">·</span>
-            <span>{formatDateTime(order.created_at)}</span>
+            <span>{formatOrderDateTimeZh(order.created_at)}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -162,6 +174,22 @@ export default async function MemberOrderDetailPage({
           </Button>
         </div>
       </div>
+
+      {order.status === "pending" && isPayuniPendingOrder(order.notes) ? (
+        <Card className="border-amber-200/80 bg-amber-50/40 dark:border-amber-900/45 dark:bg-amber-950/25">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-foreground">
+              尚未完成付款？
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              若您曾關閉付款分頁、尚未選擇付款方式，或離開後想繼續繳費，訂單仍保留為「待付款」。請點下方「繼續完成線上付款」開啟付款頁（商店訂單編號不變）。
+            </p>
+            <PayuniResumePaymentButton orderId={order.id} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="border-border/60 shadow-sm overflow-hidden">
         <CardHeader className="bg-muted/30 border-b border-border/60">
@@ -273,6 +301,8 @@ export default async function MemberOrderDetailPage({
           </Card>
         )}
       </div>
+
+      <PayuniPaymentDetailSection detail={order.payuni_payment_detail} />
     </div>
   );
 }

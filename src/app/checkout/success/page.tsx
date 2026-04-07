@@ -1,43 +1,20 @@
 import Link from "next/link";
 import Image from "next/image";
+import { cookies } from "next/headers";
 import { CheckCircle2, ShoppingBag, ArrowRight, MapPin, Calendar, CreditCard } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { ORDER_SUCCESS_ACCESS_COOKIE_NAME } from "@/lib/order-success-access";
+import { loadOrderForSuccessPage } from "@/lib/supabase/load-order-success";
+import { formatPayuniPaymentTypeForDisplay } from "@/lib/payuni/payment-channel";
+import { PayuniPaymentDetailSection } from "@/components/PayuniPaymentDetailSection";
+import { ClearPayuniSession } from "@/app/checkout/success/clear-payuni-session";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
 
 const IMAGE_PLACEHOLDER =
   "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=800";
-
-type OrderRow = {
-  id: string;
-  order_number: string;
-  created_at: string;
-  total: number;
-  subtotal: number;
-  shipping_fee: number;
-  shipping_method: "home" | "store";
-  shipping_address: string | null;
-  status: string;
-  recipient_name: string;
-};
-
-type OrderItemRow = {
-  product_name: string;
-  unit_price: number;
-  quantity: number;
-  line_total: number;
-  image_url: string | null;
-};
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("zh-TW", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
 
 function statusLabel(status: string) {
   switch (status) {
@@ -61,9 +38,9 @@ function statusLabel(status: string) {
 export default async function SuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ orderId?: string }>;
+  searchParams: Promise<{ orderId?: string; pay?: string; access?: string }>;
 }) {
-  const { orderId } = await searchParams;
+  const { orderId, pay: payFlag, access: accessFromQuery } = await searchParams;
   if (!orderId) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
@@ -99,42 +76,41 @@ export default async function SuccessPage({
     );
   }
 
-  const supabase = await createClient();
+  const cookieStore = await cookies();
+  const accessToken =
+    cookieStore.get(ORDER_SUCCESS_ACCESS_COOKIE_NAME)?.value ??
+    accessFromQuery ??
+    undefined;
 
-  const { data: order, error: orderError } = await supabase
-    .from("orders")
-    .select(
-      "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name",
-    )
-    .eq("id", orderId)
-    .maybeSingle<OrderRow>();
+  const result = await loadOrderForSuccessPage(orderId, accessToken);
 
-  if (orderError || !order) {
+  if (result.kind === "no_session") {
+    const back = encodeURIComponent(`/checkout/success?orderId=${orderId}`);
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <main className="flex-grow">
-          <div className="container mx-auto px-4 py-16">
-            <h1 className="text-2xl font-bold text-foreground">訂單資料不可取得</h1>
-            <p className="mt-2 text-muted-foreground">
-              可能原因：RLS 權限不足，或 orderId 不存在。orderId：{orderId}
+          <div className="container mx-auto max-w-lg px-4 py-16">
+            <h1 className="text-2xl font-bold text-foreground">請先登入</h1>
+            <p className="mt-2 text-muted-foreground leading-relaxed">
+              從金流返回時瀏覽器可能未帶入登入 Cookie。請登入與結帳相同的帳號後即可查看；若剛完成付款，登入後訂單應為「已付款」。
             </p>
-            <div className="mt-6 flex gap-3 flex-wrap">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Button
                 size="lg"
                 className="rounded-full"
                 nativeButton={false}
-                render={<Link href="/products" />}
+                render={<Link href={`/login?redirectTo=${back}`} />}
               >
-                回到商品
+                登入並查看訂單
               </Button>
               <Button
                 size="lg"
                 variant="outline"
                 className="rounded-full"
                 nativeButton={false}
-                render={<Link href="/cart" />}
+                render={<Link href="/member/orders" />}
               >
-                查看購物車
+                會員中心訂單
               </Button>
             </div>
           </div>
@@ -144,21 +120,62 @@ export default async function SuccessPage({
     );
   }
 
-  const { data: items } = await supabase
-    .from("order_items")
-    .select("product_name, unit_price, quantity, line_total, image_url")
-    .eq("order_id", orderId)
-    .order("created_at", { ascending: true })
-    .returns<OrderItemRow[]>();
+  if (result.kind === "not_found") {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <main className="flex-grow">
+          <div className="container mx-auto px-4 py-16">
+            <h1 className="text-2xl font-bold text-foreground">訂單資料不可取得</h1>
+            <p className="mt-2 text-muted-foreground leading-relaxed">
+              找不到此訂單，或訂單不屬於目前登入帳號。請確認訂單編號，或至會員中心查看訂單列表。
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground font-mono break-all">
+              orderId：{orderId}
+            </p>
+            <div className="mt-6 flex gap-3 flex-wrap">
+              <Button
+                size="lg"
+                className="rounded-full"
+                nativeButton={false}
+                render={<Link href="/member/orders" />}
+              >
+                我的訂單
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="rounded-full"
+                nativeButton={false}
+                render={<Link href="/products" />}
+              >
+                回到商品
+              </Button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
-  const safeItems = items ?? [];
+  const order = result.order;
+  const safeItems = result.items;
 
   const paymentText = statusLabel(order.status);
+  const payuniMethodLabel = formatPayuniPaymentTypeForDisplay(
+    order.payuni_payment_type,
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <ClearPayuniSession />
       <main className="flex-grow">
         <div className="container max-w-3xl mx-auto px-4 py-12 lg:py-20">
+          {payFlag === "db" && (
+            <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+              付款狀態可能尚未寫入資料庫，請稍候至會員中心確認；若長時間仍為待付款請聯絡客服。
+            </div>
+          )}
           <div className="text-center mb-12">
             <div className="mb-6 flex justify-center">
               <div className="rounded-full bg-primary/10 p-4 animate-in zoom-in duration-500">
@@ -167,7 +184,9 @@ export default async function SuccessPage({
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-3">感謝您的訂購！</h1>
             <p className="text-muted-foreground leading-relaxed">
-              我們已收到您的訂單，並為您處理後續流程。
+              {order.status === "pending" && order.payuni_payment_detail
+                ? "訂單已成立，請於下方期限內完成繳費；繳費完成後訂單將自動更新為已付款。"
+                : "我們已收到您的訂單，並為您處理後續流程。"}
             </p>
           </div>
 
@@ -178,7 +197,7 @@ export default async function SuccessPage({
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
                     訂單編號：<span className="text-primary">#{order.order_number}</span>
                   </CardTitle>
-                  <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
+                  <span className="text-sm text-muted-foreground">{formatOrderDateTimeZh(order.created_at)}</span>
                 </div>
               </CardHeader>
 
@@ -226,10 +245,17 @@ export default async function SuccessPage({
                   </div>
                 </div>
 
-                <div className="bg-primary/5 px-6 py-4 flex items-center justify-between border-t border-primary/10">
+                <div className="bg-primary/5 px-6 py-4 flex flex-col gap-2 border-t border-primary/10 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                    <CreditCard className="size-4" />
-                    付款狀態：{paymentText}
+                    <CreditCard className="size-4 shrink-0" />
+                    <span>
+                      付款狀態：{paymentText}
+                      {payuniMethodLabel ? (
+                        <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                          付款方式：{payuniMethodLabel}
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-primary font-medium">
                     <ShoppingBag className="size-4" />
@@ -238,6 +264,8 @@ export default async function SuccessPage({
                 </div>
               </CardContent>
             </Card>
+
+            <PayuniPaymentDetailSection detail={order.payuni_payment_detail} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-border/60 shadow-sm">
@@ -299,4 +327,3 @@ export default async function SuccessPage({
     </div>
   );
 }
-

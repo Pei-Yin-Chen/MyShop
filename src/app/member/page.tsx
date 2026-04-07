@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,14 +47,6 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
   }
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("zh-TW", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
-
 export default async function MemberIndexPage() {
   const supabase = await createClient();
   const {
@@ -96,7 +89,7 @@ export default async function MemberIndexPage() {
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">#{o.order_number}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{formatDate(o.created_at)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{formatOrderDateTimeZh(o.created_at)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={statusVariant(o.status)}>{statusLabel(o.status)}</Badge>

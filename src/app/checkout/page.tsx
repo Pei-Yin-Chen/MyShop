@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ChevronRight, CreditCard, Truck, User, ArrowLeft } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronRight, CreditCard, Truck, User, ArrowLeft, StickyNote } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,39 +18,151 @@ import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { flushSync } from "react-dom";
 
 type ShippingMethod = "home" | "store";
-type PaymentMethod = "credit" | "transfer" | "linepay";
 
 type CheckoutFormData = {
   name: string;
   phone: string;
   email: string;
   address: string;
+  orderNote: string;
 };
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const PAYUNI_SESSION_KEY = "payuni_pending_order_id";
+
+const MAX_ORDER_NOTE_LENGTH = 500;
+
+const PAY_RETURN_HINT: Record<string, string> = {
+  config: "金流尚未設定完成。",
+  bad: "無法讀取付款回傳資料。",
+  missing: "付款回傳缺少必要欄位。",
+  missing_get: "付款回傳網址缺少參數（若持續發生請洽 PAYUNi）。",
+  hash: "付款資料驗證未通過。若銀行已扣款，訂單可能稍後由背景通知更新；請至會員中心確認。",
+  decrypt: "無法解密付款結果，請聯絡客服並提供訂單編號。",
+  mer: "商店代號與回傳不符。",
+  noorder: "回傳中找不到商店訂單編號。",
+  server: "伺服器未設定 SUPABASE_SERVICE_ROLE_KEY，無法更新訂單狀態；請補上後重試背景通知。",
+  db: "已導向成功頁，但更新付款狀態時發生錯誤；請至會員中心確認或聯絡客服。",
+  failed:
+    "此筆付款未成功（例如卡號錯誤、驗證失敗或銀行拒絕）。訂單仍為「待付款」，請登入後至該筆訂單點「繼續完成線上付款」再試。",
+  unknown:
+    "回傳中找不到對應訂單，請勿重複付款；請聯絡客服並提供商店訂單編號或交易畫面。",
+  amt: "回傳金額與訂單不符，請勿重複操作付款；請聯絡客服並提供訂單編號。",
+};
+
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <CheckoutPageInner />
+    </Suspense>
+  );
+}
+
+function payMessageFromCode(code: string): string {
+  return (
+    PAY_RETURN_HINT[code] ?? `付款流程發生問題（代碼：${code}）。`
+  );
+}
+
+/** 網址已 replace 後，仍依 sticky 代碼顯示說明（避免標題變成「已前往付款」） */
+function payEmptyCardTitle(
+  payFromUrl: string | null,
+  stickyPayCode: string | null,
+  payReturnHint: string | null,
+): string {
+  const code = payFromUrl ?? stickyPayCode;
+  if (payReturnHint || code) {
+    if (code === "failed" || code === "amt") return "付款未成功";
+    return "付款回傳提醒";
+  }
+  return "已前往付款";
+}
+
+function CheckoutPageInner() {
+  const searchParams = useSearchParams();
+  const payFromUrl = searchParams.get("pay");
+  const orderIdFromUrl = searchParams.get("orderId");
+
+  /**
+   * 僅當網址列仍有 ?pay= 時顯示紅字提醒；replace 清網址後即不顯示（避免 payCapture 導致文案卡死）。
+   * sticky 僅保留代碼／訂單 id，供空購物車區塊與「登入後開啟此訂單」按鈕。
+   */
+  const [stickyPayCode, setStickyPayCode] = useState<string | null>(null);
+  const [stickyOrderId, setStickyOrderId] = useState<string | null>(null);
+  const [recentPayRedirect, setRecentPayRedirect] = useState(false);
+  /** 即將 POST 至 PAYUNi（state 才會觸發重繪；ref 單獨無法保證與 clearCart 同一幀） */
+  const [pendingPayuniNav, setPendingPayuniNav] = useState(false);
+
   const { items, totalPrice, clearCart } = useCart();
   const router = useRouter();
+
+  useEffect(() => {
+    const pay = searchParams.get("pay");
+    if (!pay) return;
+    const orderId = searchParams.get("orderId");
+    /** 付款失敗／金額不符改走獨立頁（與成功頁類似），勿留在結帳頁以免空購物車導去購物車 */
+    if (orderId && (pay === "failed" || pay === "amt")) {
+      const qs = new URLSearchParams({ orderId });
+      qs.set("reason", pay === "amt" ? "amt" : "failed");
+      router.replace(`/checkout/payment-failed?${qs}`, { scroll: false });
+      return;
+    }
+    setStickyPayCode(pay);
+    setRecentPayRedirect(true);
+    router.replace("/checkout", { scroll: false });
+  }, [searchParams, router]);
+
+  /** 只在網址仍帶 pay= 時顯示紅字（replace 後改由 cardStickyMessage） */
+  const payReturnHint = payFromUrl ? payMessageFromCode(payFromUrl) : null;
+  const payReturnCode = payFromUrl ?? stickyPayCode;
+  const payReturnOrderId = orderIdFromUrl ?? stickyOrderId;
+
   const supabase = useMemo(() => createClient(), []);
 
   // 用來避免成功下單後清空購物車導致本頁 useEffect 把路由又導回 /cart
   const redirectingToSuccessRef = useRef(false);
+  /** 已準備 POST 至 PAYUNi（同步設置，早於 setState，避免 clearCart 後一幀仍顯示舊的 sticky failed） */
+  const openingPayuniRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (searchParams.get("pay")) {
+      openingPayuniRef.current = false;
+      setPendingPayuniNav(false);
+    }
+  }, [searchParams]);
+
+  const suppressFailureUi =
+    pendingPayuniNav ||
+    redirectingToSuccessRef.current ||
+    openingPayuniRef.current;
+  const cardPayHint = suppressFailureUi ? null : payReturnHint;
+  const cardStickyCode = suppressFailureUi ? null : stickyPayCode;
+  const cardStickyMessage =
+    payFromUrl == null && cardStickyCode
+      ? payMessageFromCode(cardStickyCode)
+      : null;
+  const cardPayReturnCode = payFromUrl ?? cardStickyCode;
+  const cardPayReturnOrderId = suppressFailureUi ? null : payReturnOrderId;
 
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("home");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("credit");
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  /** 曾導向 PAYUNi、購物車已清空時，避免誤導回購物車 */
+  const [payuniAwaitReturn, setPayuniAwaitReturn] = useState(false);
+
   const [formData, setFormData] = useState<CheckoutFormData>({
     name: "",
     phone: "",
     email: "",
     address: "",
+    orderNote: "",
   });
 
   // Prefill from member profile (if available)
@@ -87,19 +206,62 @@ export default function CheckoutPage() {
     };
   }, [supabase, shippingMethod, formData.address, formData.phone]);
 
-  // 防止重新整理時 items 為空導致無法顯示
+  /** 購物車有商品＝新一筆結帳，清掉上一筆失敗的 sticky，避免送出後空車畫面仍顯示「付款未成功」 */
+  useEffect(() => {
+    if (items.length > 0) {
+      setStickyPayCode(null);
+      setStickyOrderId(null);
+      setRecentPayRedirect(false);
+      setPendingPayuniNav(false);
+    }
+  }, [items.length]);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(PAYUNI_SESSION_KEY)) {
+        setPayuniAwaitReturn(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  /** 僅在「網址帶 pay=」時清除待付款 session（勿用 payReturnCode／會含舊的 sticky failed，誤清新一筆 PAYUNi） */
+  useEffect(() => {
+    if (payFromUrl) {
+      try {
+        sessionStorage.removeItem(PAYUNI_SESSION_KEY);
+      } catch {
+        /* ignore */
+      }
+      setPayuniAwaitReturn(false);
+    }
+  }, [payFromUrl]);
+
+  // 防止重新整理時 items 為空導致無法顯示（PAYUNi 付款中／回傳錯誤時勿導回購物車）
   useEffect(() => {
     if (items.length === 0 && !redirectingToSuccessRef.current) {
+      if (payReturnCode) return;
+      try {
+        if (sessionStorage.getItem(PAYUNI_SESSION_KEY)) return;
+      } catch {
+        /* ignore */
+      }
       const timer = setTimeout(() => router.replace("/cart"), 300);
       return () => clearTimeout(timer);
     }
-  }, [items.length, router]);
+  }, [items.length, router, payReturnCode]);
 
   const shippingFee = useMemo(() => {
     return totalPrice >= 1000 || shippingMethod === "store" ? 0 : 150;
   }, [totalPrice, shippingMethod]);
 
   const finalTotal = totalPrice + shippingFee;
+
+  const handleOrderNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const { value } = e.target;
+    setFormData((prev) => ({ ...prev, orderNote: value }));
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -159,13 +321,24 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shippingMethod,
-          paymentMethod,
           formData,
           items: items.map((it) => ({ id: it.id, quantity: it.quantity })),
         }),
       });
 
-      const data: { orderId?: string; error?: string } = await res.json();
+      const data: {
+        orderId?: string;
+        error?: string;
+        payuni?: {
+          actionUrl: string;
+          fields: {
+            MerID: string;
+            Version: string;
+            EncryptInfo: string;
+            HashInfo: string;
+          };
+        };
+      } = await res.json();
       if (!res.ok) {
         if (res.status === 401) {
           // RLS 要求登入；把使用者導回登入頁
@@ -184,10 +357,45 @@ export default function CheckoutPage() {
       }
 
       redirectingToSuccessRef.current = true;
-      // 由伺服器扣庫存與寫入訂單成功後再清空購物車
-      router.push(`/checkout/success?orderId=${encodeURIComponent(orderId)}`);
-      // 先跳到 success，避免本頁因 clearCart 觸發「items 為空導回 /cart」
+
+      if (!data.payuni?.actionUrl || !data.payuni.fields) {
+        setSubmitError("無法建立 PAYUNi 付款資料，請稍後再試或聯絡客服。");
+        return;
+      }
+
+      openingPayuniRef.current = true;
+      flushSync(() => {
+        setPendingPayuniNav(true);
+        setStickyPayCode(null);
+        setStickyOrderId(null);
+        setRecentPayRedirect(false);
+        setPayuniAwaitReturn(true);
+      });
+
+      try {
+        sessionStorage.setItem(PAYUNI_SESSION_KEY, orderId);
+      } catch {
+        /* ignore */
+      }
       clearCart();
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.payuni.actionUrl;
+      form.style.display = "none";
+      const add = (name: string, value: string) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      };
+      const f = data.payuni.fields;
+      add("MerID", f.MerID);
+      add("Version", f.Version);
+      add("EncryptInfo", f.EncryptInfo);
+      add("HashInfo", f.HashInfo);
+      document.body.appendChild(form);
+      form.submit();
     } catch {
       setSubmitError("網路錯誤，請稍後再試");
     } finally {
@@ -195,12 +403,104 @@ export default function CheckoutPage() {
     }
   };
 
-  if (items.length === 0) return null;
+  const showEmptyWithoutCart =
+    items.length === 0 &&
+    (Boolean(payReturnCode) || payuniAwaitReturn || recentPayRedirect);
+
+  if (items.length === 0 && !showEmptyWithoutCart) return null;
+
+  if (showEmptyWithoutCart) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <main className="flex-grow">
+          <div className="container mx-auto max-w-lg px-4 py-16">
+            <Card className="border-border/60 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {payEmptyCardTitle(payFromUrl, cardStickyCode, cardPayHint)}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+                {cardPayHint ? (
+                  <p className="text-destructive">{cardPayHint}</p>
+                ) : null}
+                {cardStickyMessage ? (
+                  <p
+                    className={
+                      cardStickyCode === "failed" || cardStickyCode === "amt"
+                        ? "text-destructive"
+                        : "text-foreground"
+                    }
+                  >
+                    {cardStickyMessage}
+                  </p>
+                ) : null}
+                {!cardPayHint && !cardStickyMessage ? (
+                  <p>
+                    您已從本站前往 PAYUNi
+                    付款頁，購物車已清空。若已完成付款，請稍候重新整理會員中心的訂單狀態，或點下方前往訂單。
+                  </p>
+                ) : null}
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  {cardPayReturnOrderId &&
+                  (cardPayReturnCode === "failed" ||
+                    cardPayReturnCode === "amt") ? (
+                    <Button
+                      size="lg"
+                      className="rounded-full"
+                      nativeButton={false}
+                      render={
+                        <Link
+                          href={`/login?redirectTo=${encodeURIComponent(`/member/orders/${cardPayReturnOrderId}`)}`}
+                        />
+                      }
+                    >
+                      登入後開啟此訂單
+                    </Button>
+                  ) : null}
+                  <Button
+                    size="lg"
+                    className="rounded-full"
+                    variant={
+                      cardPayReturnOrderId &&
+                      (cardPayReturnCode === "failed" ||
+                        cardPayReturnCode === "amt")
+                        ? "outline"
+                        : "default"
+                    }
+                    nativeButton={false}
+                    render={<Link href="/member/orders" />}
+                  >
+                    前往我的訂單
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="rounded-full"
+                    nativeButton={false}
+                    render={<Link href="/cart" />}
+                  >
+                    回到購物車
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-10 lg:py-16">
+          {payReturnHint && (
+            <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {payReturnHint}
+            </div>
+          )}
           <div className="mb-10">
             <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">結帳</h1>
             <nav className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -390,46 +690,47 @@ export default function CheckoutPage() {
               <Card className="border-border/60 shadow-sm">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <CreditCard className="size-5 text-primary" />
-                    付款方式
+                    <StickyNote className="size-5 text-primary" />
+                    訂單備註
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-5">
-                  <label className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/30 cursor-pointer transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="credit"
-                      checked={paymentMethod === "credit"}
-                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                      className="size-4 text-primary"
-                    />
-                    <span className="font-medium">信用卡 / 簽帳金融卡</span>
+                <CardContent className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground block" htmlFor="orderNote">
+                    給賣家的留言（選填）
                   </label>
+                  <textarea
+                    id="orderNote"
+                    name="orderNote"
+                    value={formData.orderNote}
+                    onChange={handleOrderNoteChange}
+                    rows={3}
+                    maxLength={MAX_ORDER_NOTE_LENGTH}
+                    placeholder="例如：到貨時間、不要附餐具、發票抬頭…"
+                    className={cn(
+                      "w-full min-h-[88px] rounded-lg border bg-background px-3 py-2 text-sm outline-none transition-all resize-y",
+                      "border-border focus:ring-2 focus:ring-primary/20",
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground text-right tabular-nums">
+                    {formData.orderNote.length} / {MAX_ORDER_NOTE_LENGTH}
+                  </p>
+                </CardContent>
+              </Card>
 
-                  <label className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/30 cursor-pointer transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="transfer"
-                      checked={paymentMethod === "transfer"}
-                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                      className="size-4 text-primary"
-                    />
-                    <span className="font-medium">銀行轉帳</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/30 cursor-pointer transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="linepay"
-                      checked={paymentMethod === "linepay"}
-                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                      className="size-4 text-primary"
-                    />
-                    <span className="font-medium">LINE Pay</span>
-                  </label>
+              <Card className="border-border/60 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <CreditCard className="size-5 text-primary" />
+                    線上付款
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground leading-relaxed">
+                  <p>
+                    按下「確認下單」後，將前往統一金流 PAYUNi 整合式付款頁，於該頁選擇信用卡、ATM、超商等付款方式；完成後會導回本站的訂單完成頁。
+                  </p>
+                  <p className="text-xs">
+                    本站僅透過 PAYUNi 收款，不再提供站內模擬付款選項。
+                  </p>
                 </CardContent>
               </Card>
             </div>
