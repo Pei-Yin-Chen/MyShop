@@ -1,9 +1,6 @@
 import Link from 'next/link'
-import { LayoutDashboard, Users, ShoppingBag, Settings } from 'lucide-react'
+import { AdminSidebarNav } from '@/components/admin/AdminSidebarNav'
 import { AdminSignOutButton } from '@/components/admin/AdminSignOutButton'
-
-const navClass =
-  'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground'
 
 export default function AdminPanelLayout({
   children,
@@ -21,24 +18,7 @@ export default function AdminPanelLayout({
             <span className="mt-1 block text-xs font-medium text-muted-foreground">後台管理</span>
           </Link>
         </div>
-        <nav className="flex-1 space-y-1 p-4">
-          <Link href="/admin" className={navClass}>
-            <LayoutDashboard className="size-5 shrink-0 text-primary/80" />
-            儀表板
-          </Link>
-          <Link href="/admin/members" className={navClass}>
-            <Users className="size-5 shrink-0 text-primary/80" />
-            會員管理
-          </Link>
-          <Link href="/admin/products" className={navClass}>
-            <ShoppingBag className="size-5 shrink-0 text-primary/80" />
-            商品管理
-          </Link>
-          <Link href="/admin/settings" className={navClass}>
-            <Settings className="size-5 shrink-0 text-primary/80" />
-            系統設定
-          </Link>
-        </nav>
+        <AdminSidebarNav />
         <div className="border-t border-border p-4">
           <AdminSignOutButton />
         </div>

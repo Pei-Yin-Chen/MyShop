@@ -4,7 +4,7 @@ import { verifyOrderSuccessAccessToken } from "@/lib/order-success-access";
 import type { PayuniPaymentDetailStored } from "@/lib/payuni/payment-detail";
 
 const ORDER_SELECT =
-  "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, notes, user_id, payuni_payment_type, payuni_payment_detail";
+  "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, notes, user_id, payuni_payment_type, payuni_payment_detail, payuni_expire_at";
 
 export type OrderSuccessRow = {
   id: string;
@@ -20,6 +20,7 @@ export type OrderSuccessRow = {
   notes: string | null;
   payuni_payment_type: string | null;
   payuni_payment_detail: PayuniPaymentDetailStored | null;
+  payuni_expire_at: string | null;
 };
 
 export type OrderItemSuccessRow = {

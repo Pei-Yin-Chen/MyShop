@@ -15,6 +15,7 @@ import {
 } from "@/lib/payuni/payment-detail";
 import { findOrderByPayuniMerTradeNo } from "@/lib/payuni/find-order-by-mer-trade-no";
 import { createServiceClient } from "@/lib/supabase/service";
+import { payuniExpireDateRawToUtcBoundaryIso } from "@/lib/payuni/expire-at";
 
 function pickField(d: Record<string, string>, ...names: string[]): string {
   for (const n of names) {
@@ -125,6 +126,14 @@ export async function processPayuniReturn(
   const basePatch: Record<string, unknown> = { updated_at: now };
   if (hasPayuniPaymentDetailContent(detailJson)) {
     basePatch.payuni_payment_detail = detailJson;
+    const rawExp =
+      typeof detailJson.expireDate === "string"
+        ? detailJson.expireDate.trim()
+        : "";
+    if (rawExp) {
+      const iso = payuniExpireDateRawToUtcBoundaryIso(rawExp);
+      if (iso) basePatch.payuni_expire_at = iso;
+    }
   }
   if (paymentType) {
     basePatch.payuni_payment_type = paymentType;

@@ -166,9 +166,8 @@ export default async function AdminProductsPage({
       <form method="get" className="rounded-xl border border-border/80 bg-muted/25 px-4 py-4 shadow-sm sm:px-5">
         <fieldset className="min-w-0 border-0 p-0">
           <legend className="sr-only">篩選商品</legend>
-          <p className="text-sm font-semibold text-foreground">篩選條件</p>
 
-          <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-4">
             <div className="min-w-0 w-full lg:max-w-md xl:max-w-lg">
               <label
                 htmlFor="admin-products-q"

@@ -8,7 +8,8 @@ function unauthorized() {
 }
 
 /**
- * 排程：取消「建立超過 STALE_PAYUNI_PENDING_DAYS（預設 1）天仍待付款」的 PAYUNi 訂單並還原庫存。
+ * 排程：取消仍待付款的 PAYUNi 訂單並還原庫存。條件見
+ * `runCancelStalePayuniPendingOrders`（建立逾時、PAYUNi 期限、**僅線上**依訂單成立日 +1 日曆日等）。
  * 請設定 CRON_SECRET，並以 Header：`Authorization: Bearer <CRON_SECRET>` 呼叫。
  * Vercel Cron 會發 GET；亦可手動 POST 觸發。
  */

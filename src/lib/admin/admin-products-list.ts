@@ -1,8 +1,8 @@
-/** 後台商品列表：分頁大小與 URL 輔助 */
+/** 後台商品列表：分頁大小、URL 輔助與篩選常數 */
 
 export const ADMIN_PRODUCTS_PAGE_SIZE = 20;
 
-/** 後台列表允許的狀態篩選值（URL `status`） */
+/** 後台列表允許的狀態篩選值 */
 export const ADMIN_PRODUCT_STATUS_FILTER_VALUES = [
   "draft",
   "active",

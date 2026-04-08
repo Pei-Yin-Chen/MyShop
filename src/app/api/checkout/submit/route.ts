@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAppBaseUrl, getPayuniConfig, getPayuniUppOptionalEncryptFields } from "@/lib/payuni/config";
+import { payuniExpireDateYyyyMmDdToUtcExclusiveEndIso } from "@/lib/payuni/expire-date";
 import { generateMerTradeNo } from "@/lib/payuni/mer-trade-no";
 import { buildUppPostBody } from "@/lib/payuni/upp";
 
@@ -174,6 +175,8 @@ export async function POST(req: Request) {
 
     const phoneDigits = normalizePhone(formData.phone);
 
+    const payuniOptionalEncrypt = getPayuniUppOptionalEncryptFields();
+
     const { data: orderRow, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -192,6 +195,9 @@ export async function POST(req: Request) {
         status: "pending",
         notes: "payment=payuni",
         customer_note: sanitizeCustomerNote(formData.orderNote),
+        payuni_expire_at: payuniExpireDateYyyyMmDdToUtcExclusiveEndIso(
+          payuniOptionalEncrypt.ExpireDate,
+        ),
       })
       .select("id")
       .single();
@@ -286,7 +292,7 @@ export async function POST(req: Request) {
       BackURL: payuniBackUrl,
       UsrMail: formData.email,
       Lang: "zh-tw",
-      ...getPayuniUppOptionalEncryptFields(),
+      ...payuniOptionalEncrypt,
     };
 
     try {

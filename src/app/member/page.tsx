@@ -5,6 +5,10 @@ import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  orderStatusBadgeVariant,
+  orderStatusLabel,
+} from "@/lib/orders/order-status-display";
 
 type OrderRow = {
   id: string;
@@ -13,39 +17,6 @@ type OrderRow = {
   total: number;
   status: string;
 };
-
-function statusLabel(status: string) {
-  switch (status) {
-    case "pending":
-      return "待付款";
-    case "paid":
-      return "已付款";
-    case "processing":
-      return "處理中";
-    case "shipped":
-      return "已出貨";
-    case "completed":
-      return "已完成";
-    case "cancelled":
-      return "已取消";
-    default:
-      return status;
-  }
-}
-
-function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "paid":
-    case "processing":
-    case "shipped":
-    case "completed":
-      return "secondary";
-    case "cancelled":
-      return "destructive";
-    default:
-      return "outline";
-  }
-}
 
 export default async function MemberIndexPage() {
   const supabase = await createClient();
@@ -92,7 +63,9 @@ export default async function MemberIndexPage() {
                   <p className="mt-0.5 text-xs text-muted-foreground">{formatOrderDateTimeZh(o.created_at)}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={statusVariant(o.status)}>{statusLabel(o.status)}</Badge>
+                  <Badge variant={orderStatusBadgeVariant(o.status)}>
+                    {orderStatusLabel(o.status)}
+                  </Badge>
                   <span className="text-sm font-medium tabular-nums text-foreground">NT$ {o.total}</span>
                 </div>
               </Link>

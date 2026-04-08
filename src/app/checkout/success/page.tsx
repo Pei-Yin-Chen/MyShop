@@ -12,28 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
+import {
+  orderStatusBadgeVariant,
+  orderStatusLabel,
+} from "@/lib/orders/order-status-display";
+import { Badge } from "@/components/ui/badge";
 
 const IMAGE_PLACEHOLDER =
   "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=800";
-
-function statusLabel(status: string) {
-  switch (status) {
-    case "pending":
-      return "待付款";
-    case "paid":
-      return "已付款";
-    case "processing":
-      return "處理中";
-    case "shipped":
-      return "已出貨";
-    case "completed":
-      return "已完成";
-    case "cancelled":
-      return "已取消";
-    default:
-      return status;
-  }
-}
 
 export default async function SuccessPage({
   searchParams,
@@ -161,7 +147,7 @@ export default async function SuccessPage({
   const order = result.order;
   const safeItems = result.items;
 
-  const paymentText = statusLabel(order.status);
+  const paymentText = orderStatusLabel(order.status);
   const payuniMethodLabel = formatPayuniPaymentTypeForDisplay(
     order.payuni_payment_type,
   );
@@ -246,26 +232,31 @@ export default async function SuccessPage({
                 </div>
 
                 <div className="bg-primary/5 px-6 py-4 flex flex-col gap-2 border-t border-primary/10 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-primary font-medium">
                     <CreditCard className="size-4 shrink-0" />
-                    <span>
-                      付款狀態：{paymentText}
-                      {payuniMethodLabel ? (
-                        <span className="block text-xs font-normal text-muted-foreground mt-0.5">
-                          付款方式：{payuniMethodLabel}
-                        </span>
-                      ) : null}
-                    </span>
+                    <span>付款狀態：</span>
+                    <Badge variant={orderStatusBadgeVariant(order.status)}>{paymentText}</Badge>
+                    {payuniMethodLabel ? (
+                      <span className="w-full basis-full text-xs font-normal text-muted-foreground">
+                        付款方式：{payuniMethodLabel}
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                    <ShoppingBag className="size-4" />
-                    訂單狀態：{statusLabel(order.status)}
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-primary font-medium">
+                    <ShoppingBag className="size-4 shrink-0" />
+                    <span>訂單狀態：</span>
+                    <Badge variant={orderStatusBadgeVariant(order.status)}>
+                      {orderStatusLabel(order.status)}
+                    </Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <PayuniPaymentDetailSection detail={order.payuni_payment_detail} />
+            <PayuniPaymentDetailSection
+              detail={order.payuni_payment_detail}
+              payuniExpireAtUtc={order.payuni_expire_at}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-border/60 shadow-sm">

@@ -1,0 +1,18 @@
+---
+description: 後台「返回列表」導覽：左上角幽靈圖示按鈕（與會員詳細頁一致）
+globs: src/app/admin/**/*.tsx,src/components/admin/**/*.tsx
+alwaysApply: false
+---
+
+# 後台返回上一層列表
+
+在 `src/app/admin/**` 中，凡從**列表進入的詳情／子頁**（例如會員詳細、編輯商品、新增商品、分類管理），**不要**使用右上角文字按鈕「返回列表」+ `variant="outline"`。
+
+請改為與 **`AdminMemberDetailPage`（會員詳細）** 相同：
+
+1. 使用 **`@/components/admin/AdminBackToListLink`**，傳入 `href` 與 **`ariaLabel`**（螢幕報讀器說明目的地，如「返回商品列表」）；可選 `title`（hover，預設「返回列表」）。
+2. **版面**：標題列為 `flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`，左側為  
+   `flex items-center gap-3` → 先 **`AdminBackToListLink`**，再 **標題 + 副標**（`h2` 與說明／ID 用 `mt-0.5` 與會員詳細對齊）。
+3. **不要**自行複製 `ArrowLeft` + `buttonVariants` 的連結，改動一律走 **`AdminBackToListLink`**，避免樣式不一致。
+
+參考實作：`src/app/admin/(panel)/members/[id]/page.tsx` 頂部標題列。

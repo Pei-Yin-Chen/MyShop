@@ -1,0 +1,15 @@
+---
+description: 後台表單欄位標籤與輸入框的間距與字級（與列表篩選區一致）
+globs: src/app/admin/**/*.tsx,src/components/admin/**/*.tsx
+alwaysApply: false
+---
+
+# 後台表單欄位（標籤 + 輸入）
+
+在 `src/app/admin/**` 與 `src/components/admin/**` 中，**可見文字標籤**與其**下方**的輸入框（`input` / `textarea` / `select` 觸發器）請與 `AdminProductsPage`、`AdminMembersPage` 篩選區一致：
+
+- **標籤**：`className="mb-1.5 block text-xs font-medium text-muted-foreground"`
+- **標籤與輸入**：同一欄位包在 `<div>` 內，標籤緊接輸入（標籤上的 `mb-1.5` 即為兩者間距）
+- **欄位之間**（多個 label+input 區塊、或區塊與按鈕列）：外層表單用 `flex flex-col gap-3` 或 `space-y-3`，不要只靠無 `block`／無 `mb-1.5` 的 `label` 造成與列表頁不一致
+
+隱藏欄位 `input type="hidden"` 可放在表單頂部，不影響上述可見欄位排版。

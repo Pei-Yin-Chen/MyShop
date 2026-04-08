@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { fetchUserIsAdmin } from '@/lib/supabase/is-admin'
+import { signOutIfProfileBanned } from '@/lib/supabase/profile-banned'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
@@ -18,6 +19,13 @@ export async function login(formData: FormData, redirectTo: string = '/') {
 
   if (error) {
     return { error: error.message }
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user && (await signOutIfProfileBanned(supabase, user.id))) {
+    return { error: '此帳號已停用，如有疑問請聯絡客服。' }
   }
 
   revalidatePath('/', 'layout')
@@ -49,6 +57,10 @@ export async function loginAdmin(formData: FormData) {
   if (!isAdmin) {
     await supabase.auth.signOut()
     return { error: '此帳號沒有管理員權限' }
+  }
+
+  if (await signOutIfProfileBanned(supabase, userId)) {
+    return { error: '此帳號已停用' }
   }
 
   revalidatePath('/', 'layout')

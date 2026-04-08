@@ -1,0 +1,17 @@
+---
+description: 後台表單欄位驗證錯誤：紅框 + 欄位下方紅字（與前台／商品表單一致）
+globs: src/app/admin/**/*.tsx,src/components/admin/**/*.tsx
+alwaysApply: false
+---
+
+# 後台表單欄位錯誤顯示
+
+以 **server action** 回傳驗證結果時，請與 `ProductForm`、`CategoryCreateForm`、`profile-form` 等既有寫法一致：
+
+1. **型別**：失敗時除 `error: string`（簡述或「請修正…」）外，可附 `fieldErrors?: Record<string, string>`，鍵為欄位 `name`。
+2. **輸入框**：有該欄錯誤時使用 `border-destructive ring-2 ring-destructive/10`（或專案內與 `CategoryEditRow` 相同的 `border-destructive` 樣式）。
+3. **錯誤訊息**：緊貼在該欄位**下方**，使用  
+   `text-xs text-destructive animate-in fade-in slide-in-from-top-1 duration-200`（與 `profile-form` 一致）。
+4. **非欄位錯誤**（例如未授權、資料庫錯誤）：在表單區塊內以 `text-sm text-destructive` 顯示，且勿與同一欄的 `fieldErrors` 重複顯示相同內容。
+
+表單層級成功／一般提示維持既有樣式即可；**欄位驗證**一律以上方模式為準。

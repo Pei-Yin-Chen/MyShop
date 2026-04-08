@@ -11,6 +11,10 @@ import type { PayuniPaymentDetailStored } from "@/lib/payuni/payment-detail";
 import { PayuniPaymentDetailSection } from "@/components/PayuniPaymentDetailSection";
 import { PayuniResumePaymentButton } from "@/components/PayuniResumePaymentButton";
 import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
+import {
+  orderStatusBadgeVariant,
+  orderStatusLabel,
+} from "@/lib/orders/order-status-display";
 import { shouldOfferPayuniResumePayment } from "@/lib/payuni/should-offer-resume-payment";
 
 const IMAGE_PLACEHOLDER =
@@ -33,6 +37,7 @@ type OrderRow = {
   customer_note: string | null;
   payuni_payment_type: string | null;
   payuni_payment_detail: PayuniPaymentDetailStored | null;
+  payuni_expire_at: string | null;
 };
 
 type OrderItemRow = {
@@ -72,42 +77,9 @@ function userNoteFromNotes(notes: string | null): string | null {
   return rest || null;
 }
 
-function statusLabel(status: string) {
-  switch (status) {
-    case "pending":
-      return "待付款";
-    case "paid":
-      return "已付款";
-    case "processing":
-      return "處理中";
-    case "shipped":
-      return "已出貨";
-    case "completed":
-      return "已完成";
-    case "cancelled":
-      return "已取消";
-    default:
-      return status;
-  }
-}
-
 function isPayuniPendingOrder(notes: string | null): boolean {
   const first = notes?.trim().split(/\r?\n/, 1)[0]?.trim() ?? "";
   return first === "payment=payuni";
-}
-
-function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "paid":
-    case "processing":
-    case "shipped":
-    case "completed":
-      return "secondary";
-    case "cancelled":
-      return "destructive";
-    default:
-      return "outline";
-  }
 }
 
 export default async function MemberOrderDetailPage({
@@ -124,7 +96,7 @@ export default async function MemberOrderDetailPage({
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select(
-      "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes, customer_note, payuni_payment_type, payuni_payment_detail",
+      "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes, customer_note, payuni_payment_type, payuni_payment_detail, payuni_expire_at",
     )
     .eq("id", id)
     .eq("user_id", user?.id ?? "")
@@ -164,7 +136,9 @@ export default async function MemberOrderDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={statusVariant(order.status)}>{statusLabel(order.status)}</Badge>
+          <Badge variant={orderStatusBadgeVariant(order.status)}>
+            {orderStatusLabel(order.status)}
+          </Badge>
           <Button
             variant="outline"
             className="rounded-full"
@@ -307,7 +281,10 @@ export default async function MemberOrderDetailPage({
           </Card>
         )}
 
-        <PayuniPaymentDetailSection detail={order.payuni_payment_detail} />
+        <PayuniPaymentDetailSection
+          detail={order.payuni_payment_detail}
+          payuniExpireAtUtc={order.payuni_expire_at}
+        />
       </div>
     </div>
   );

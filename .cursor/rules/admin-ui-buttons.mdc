@@ -1,0 +1,17 @@
+---
+description: 後台管理介面主要按鈕樣式（與列表頁「搜尋」一致）
+globs: src/app/admin/**/*.tsx,src/components/admin/**/*.tsx
+alwaysApply: false
+---
+
+# 後台主要操作按鈕
+
+在 `src/app/admin/**` 與 `src/components/admin/**` 中，凡**表單主要送出／篩選／匯入／儲存**等主動作按鈕，請與 `AdminProductsPage`、`AdminMembersPage`（列表區 GET 篩選表單）的「搜尋」按鈕一致：
+
+- 使用 `@/components/ui/button` 的 `Button`
+- `size="lg"`
+- `className="rounded-full"`（必要時再疊加 `cn(...)`）
+
+**不要**對這類按鈕使用 `size="sm"` 或僅 `rounded-lg`，除非是同列的次要按鈕（例如「清除」已用 `buttonVariants({ variant: "outline", size: "lg" }), "rounded-full"`）。
+
+對話方塊內的取消／確認、圖示按鈕、表格列內小按鈕可維持較小尺寸；**頁面級表單主按鈕**一律 `lg` + `rounded-full`。

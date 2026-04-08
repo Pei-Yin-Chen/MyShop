@@ -120,6 +120,11 @@ export default function LoginClient() {
             </div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {searchParams.get('error') === 'banned' && (
+              <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                此帳號已停用，如有疑問請聯絡客服。
+              </p>
+            )}
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground block mb-1.5" htmlFor="email">
                 電子郵件

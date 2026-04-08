@@ -42,7 +42,7 @@ export function getPayuniConfig(): PayuniConfig | null {
 
 /**
  * UPP EncryptInfo 選填：繳費截止日 YYYY-MM-DD、ATM 銀行代碼（逗號分隔），見 PAYUNi 文件。
- * `ExpireDate`：未設定 `PAYUNI_EXPIRE_DATE` 時，依台北時區與「當日剩餘不足 2 小時則隔日」自動計算。
+ * `ExpireDate`：未設定 `PAYUNI_EXPIRE_DATE` 時為「台北下單日 + 1 日」日曆日（與 PAYUNi 1 日期限、該日 23:59:59 前有效之語意一致）。
  */
 export function getPayuniUppOptionalEncryptFields(): Record<string, string> {
   const out: Record<string, string> = {};

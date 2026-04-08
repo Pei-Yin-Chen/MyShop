@@ -10,6 +10,7 @@ import {
 import { findOrderByPayuniMerTradeNo } from "@/lib/payuni/find-order-by-mer-trade-no";
 import { parsePayuniPostBody } from "@/lib/payuni/parse-post";
 import { createServiceClient } from "@/lib/supabase/service";
+import { payuniExpireDateRawToUtcBoundaryIso } from "@/lib/payuni/expire-at";
 
 function pickField(d: Record<string, string>, ...names: string[]): string {
   for (const n of names) {
@@ -110,6 +111,14 @@ export async function POST(req: Request) {
     if (paymentType) update.payuni_payment_type = paymentType;
     if (hasPayuniPaymentDetailContent(detailJson)) {
       update.payuni_payment_detail = detailJson;
+      const rawExp =
+        typeof detailJson.expireDate === "string"
+          ? detailJson.expireDate.trim()
+          : "";
+      if (rawExp) {
+        const iso = payuniExpireDateRawToUtcBoundaryIso(rawExp);
+        if (iso) update.payuni_expire_at = iso;
+      }
     }
 
     const { error: updErr } = await supabase
@@ -127,6 +136,14 @@ export async function POST(req: Request) {
     }
     if (hasPayuniPaymentDetailContent(detailJson)) {
       patch.payuni_payment_detail = detailJson;
+      const rawExp =
+        typeof detailJson.expireDate === "string"
+          ? detailJson.expireDate.trim()
+          : "";
+      if (rawExp) {
+        const iso = payuniExpireDateRawToUtcBoundaryIso(rawExp);
+        if (iso) patch.payuni_expire_at = iso;
+      }
     }
     if (Object.keys(patch).length > 1) {
       const { error: patchErr } = await supabase

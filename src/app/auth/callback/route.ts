@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { signOutIfProfileBanned } from '@/lib/supabase/profile-banned'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -11,6 +12,12 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user && (await signOutIfProfileBanned(supabase, user.id))) {
+        return NextResponse.redirect(`${origin}/login?error=banned`)
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

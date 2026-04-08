@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button-variants";
-import { cn } from "@/lib/utils";
+import { AdminBackToListLink } from "@/components/admin/AdminBackToListLink";
 import { CategoryCreateForm } from "@/components/admin/CategoryCreateForm";
 import { CategoryEditRow } from "@/components/admin/CategoryEditRow";
 
@@ -24,17 +23,18 @@ export default async function AdminProductCategoriesPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">商品分類</h2>
-          <p className="mt-1 text-sm text-muted-foreground">一層分類，供商品選擇與前台篩選</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <AdminBackToListLink
+            href="/admin/products"
+            ariaLabel="返回商品管理"
+            title="返回商品管理"
+          />
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">商品分類</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">一層分類，供商品選擇與前台篩選</p>
+          </div>
         </div>
-        <Link
-          href="/admin/products"
-          className={cn(buttonVariants({ variant: "outline" }))}
-        >
-          返回商品管理
-        </Link>
       </div>
 
       <CategoryCreateForm />
