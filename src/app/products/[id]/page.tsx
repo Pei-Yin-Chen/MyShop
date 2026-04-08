@@ -10,6 +10,8 @@ import {
   fetchProductById,
   fetchRelatedProducts,
 } from "@/lib/supabase/fetch-products";
+import { stripHtmlToPlainText } from "@/lib/html/rich-text";
+import DOMPurify from "isomorphic-dompurify";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,19 +22,21 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     (u): u is string => typeof u === "string" && u.startsWith("http"),
   );
 
+  const plainDescription = stripHtmlToPlainText(product.description);
+
   return {
     title: `${product.name} · My Pâtisserie`,
-    description: product.description,
+    description: plainDescription.slice(0, 160),
     openGraph: {
       title: product.name,
-      description: product.description,
+      description: plainDescription.slice(0, 200),
       type: "website",
       images: ogImages.slice(0, 4).map((url) => ({ url })),
     },
     twitter: {
       card: "summary_large_image",
       title: product.name,
-      description: product.description,
+      description: plainDescription.slice(0, 200),
       images: ogImages[0] ? [ogImages[0]] : undefined,
     },
   };
@@ -66,7 +70,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.description,
+    description: stripHtmlToPlainText(product.description),
     image: imageUrls,
     category: product.category,
     offers: {
@@ -115,7 +119,18 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <div className="space-y-8">
                 <h2 className="text-2xl font-semibold tracking-tight">詳細介紹</h2>
                 <div className="prose prose-stone max-w-none text-muted-foreground leading-relaxed">
-                  <p className="whitespace-pre-wrap">{product.fullDescription || product.description}</p>
+                  {product.fullDescription?.trim() ? (
+                    <p className="whitespace-pre-wrap">{product.fullDescription}</p>
+                  ) : /<[a-z][\s\S]*>/i.test(product.description.trim()) ? (
+                    <div
+                      className="[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-6"
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(product.description),
+                      }}
+                    />
+                  ) : (
+                    <p className="whitespace-pre-wrap">{product.description}</p>
+                  )}
                 </div>
               </div>
 

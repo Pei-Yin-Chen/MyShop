@@ -1,5 +1,6 @@
 import type { Product } from "@/data/products";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /** 無圖片時避免 next/image 空 src */
 const IMAGE_PLACEHOLDER =
@@ -15,7 +16,9 @@ export interface ProductRow {
   name: string;
   subtitle: string | null;
   price: number;
-  category: string;
+  category_id: string;
+  /** 由 attachCategoryNames 注入 */
+  category_name?: string;
   description: string;
   full_description: string | null;
   details: unknown;
@@ -43,7 +46,8 @@ function parseDetails(raw: unknown): { label: string; value: string }[] {
 }
 
 function parseProductStatus(s: string | null): Product["status"] {
-  if (s === "draft" || s === "active" || s === "archived") return s;
+  if (s === "draft" || s === "active" || s === "archived" || s === "sold_out")
+    return s;
   return undefined;
 }
 
@@ -64,7 +68,7 @@ export function mapProductRow(row: ProductRow): Product {
     name: row.name,
     subtitle: row.subtitle ?? undefined,
     price: row.price,
-    category: row.category,
+    category: row.category_name ?? "",
     description: row.description,
     fullDescription: row.full_description ?? undefined,
     details: parseDetails(row.details),
@@ -78,13 +82,13 @@ export function mapProductRow(row: ProductRow): Product {
   };
 }
 
-/** 與 mapProductRow 對應的 select，前台／瀏覽器端查詢可複用 */
+/** 與 mapProductRow 對應的 select（分類名稱另查 product_categories，避免依賴 PostgREST 嵌套關聯快取） */
 export const PRODUCT_LIST_SELECT = `
   id,
   name,
   subtitle,
   price,
-  category,
+  category_id,
   description,
   full_description,
   details,
@@ -101,12 +105,37 @@ export const PRODUCT_LIST_SELECT = `
   )
 `;
 
+async function attachCategoryNames(
+  supabase: SupabaseClient,
+  rows: ProductRow[] | null,
+): Promise<ProductRow[]> {
+  const list = rows ?? [];
+  const ids = [...new Set(list.map((r) => r.category_id).filter(Boolean))];
+  if (ids.length === 0) return list.map((r) => ({ ...r, category_name: "" }));
+
+  const { data: cats, error } = await supabase
+    .from("product_categories")
+    .select("id, name")
+    .in("id", ids);
+
+  if (error) {
+    console.error("[attachCategoryNames]", error.message);
+    return list.map((r) => ({ ...r, category_name: "" }));
+  }
+
+  const map = new Map((cats ?? []).map((c) => [c.id as string, c.name as string]));
+  return list.map((r) => ({
+    ...r,
+    category_name: map.get(r.category_id) ?? "",
+  }));
+}
+
 export async function fetchProductsForCatalog(): Promise<Product[]> {
   const supabase = createPublicSupabaseClient();
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_LIST_SELECT)
-    .eq("status", "active")
+    .in("status", ["active", "sold_out"])
     .order("display_order", { ascending: true });
 
   if (error) {
@@ -114,7 +143,8 @@ export async function fetchProductsForCatalog(): Promise<Product[]> {
     return [];
   }
 
-  return (data as ProductRow[] | null)?.map(mapProductRow) ?? [];
+  const withNames = await attachCategoryNames(supabase, data as ProductRow[] | null);
+  return withNames.map((row) => mapProductRow(row));
 }
 
 export async function fetchProductById(id: string): Promise<Product | null> {
@@ -123,7 +153,7 @@ export async function fetchProductById(id: string): Promise<Product | null> {
     .from("products")
     .select(PRODUCT_LIST_SELECT)
     .eq("id", id)
-    .eq("status", "active")
+    .in("status", ["active", "sold_out"])
     .maybeSingle();
 
   if (error) {
@@ -131,7 +161,8 @@ export async function fetchProductById(id: string): Promise<Product | null> {
     return null;
   }
   if (!data) return null;
-  return mapProductRow(data as ProductRow);
+  const [withName] = await attachCategoryNames(supabase, [data as ProductRow]);
+  return mapProductRow(withName);
 }
 
 export async function fetchFeaturedProducts(): Promise<Product[]> {
@@ -140,7 +171,7 @@ export async function fetchFeaturedProducts(): Promise<Product[]> {
     .from("products")
     .select(PRODUCT_LIST_SELECT)
     .eq("is_featured", true)
-    .eq("status", "active")
+    .in("status", ["active", "sold_out"])
     .order("display_order", { ascending: true });
 
   if (error) {
@@ -148,7 +179,8 @@ export async function fetchFeaturedProducts(): Promise<Product[]> {
     return [];
   }
 
-  return (data as ProductRow[] | null)?.map(mapProductRow) ?? [];
+  const withNames = await attachCategoryNames(supabase, data as ProductRow[] | null);
+  return withNames.map((row) => mapProductRow(row));
 }
 
 export async function fetchRelatedProducts(
@@ -157,11 +189,21 @@ export async function fetchRelatedProducts(
   limit = 4,
 ): Promise<Product[]> {
   const supabase = createPublicSupabaseClient();
+  const { data: catRows } = await supabase
+    .from("product_categories")
+    .select("id")
+    .eq("name", category)
+    .maybeSingle()
+
+  if (!catRows?.id) {
+    return []
+  }
+
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_LIST_SELECT)
-    .eq("category", category)
-    .eq("status", "active")
+    .eq("category_id", catRows.id)
+    .in("status", ["active", "sold_out"])
     .neq("id", excludeId)
     .order("display_order", { ascending: true })
     .limit(limit);
@@ -171,7 +213,8 @@ export async function fetchRelatedProducts(
     return [];
   }
 
-  return (data as ProductRow[] | null)?.map(mapProductRow) ?? [];
+  const withNames = await attachCategoryNames(supabase, data as ProductRow[] | null);
+  return withNames.map((row) => mapProductRow(row));
 }
 
 export async function fetchAllProductIds(): Promise<string[]> {
@@ -179,7 +222,7 @@ export async function fetchAllProductIds(): Promise<string[]> {
   const { data, error } = await supabase
     .from("products")
     .select("id")
-    .eq("status", "active")
+    .in("status", ["active", "sold_out"])
     .order("display_order", { ascending: true });
 
   if (error) {

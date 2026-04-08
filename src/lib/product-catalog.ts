@@ -1,4 +1,5 @@
 import type { Product } from "@/data/products";
+import { stripHtmlToPlainText } from "@/lib/html/rich-text";
 
 export const PAGE_SIZE = 6;
 
@@ -98,7 +99,7 @@ export function filterProducts(list: Product[], q: CatalogQuery): Product[] {
     out = out.filter(
       (p) =>
         p.name.includes(kw) ||
-        p.description.includes(kw) ||
+        stripHtmlToPlainText(p.description).includes(kw) ||
         (p.subtitle?.includes(kw) ?? false),
     );
   }

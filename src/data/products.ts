@@ -18,5 +18,5 @@ export interface Product {
   /** 庫存（來自 DB `stock_quantity`） */
   stockQuantity?: number;
   /** 上架狀態（來自 DB `status`） */
-  status?: "draft" | "active" | "archived";
+  status?: "draft" | "active" | "archived" | "sold_out";
 }

@@ -11,6 +11,7 @@ import type { Product } from "@/data/products";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/use-wishlist";
 import { cn } from "@/lib/utils";
+import { stripHtmlToPlainText } from "@/lib/html/rich-text";
 
 function FeaturedProductCard({
   product,
@@ -66,7 +67,7 @@ function FeaturedProductCard({
             </h3>
           </Link>
           <p className="line-clamp-2 min-h-[2.875rem] text-sm leading-relaxed text-muted-foreground">
-            {product.description}
+            {stripHtmlToPlainText(product.description)}
           </p>
         </div>
         <div className="flex items-center justify-between border-t border-border/60 pt-4">

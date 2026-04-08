@@ -27,12 +27,13 @@ export default function RootLayout({
   return (
     <html
       lang="zh-Hant"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full min-h-0 antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="flex h-full min-h-0 flex-col overflow-x-hidden">
         <CartProvider>
           <Navbar />
-          {children}
+          {/* flex-1 + min-h-0：與後台 flex-1 鏈銜接，避免內容撐出 body 出現雙重捲動 */}
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
         </CartProvider>
       </body>
     </html>

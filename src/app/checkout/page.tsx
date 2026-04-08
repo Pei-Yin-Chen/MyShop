@@ -305,6 +305,30 @@ function CheckoutPageInner() {
     return newErrors;
   };
 
+  /** 離開欄位時驗證（與送出時 validate() 規則一致） */
+  function blurCheckoutField(field: "name" | "phone" | "email" | "address") {
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (field === "name") {
+        if (!formData.name.trim()) next.name = "請輸入姓名";
+        else delete next.name;
+      } else if (field === "phone") {
+        if (!formData.phone.trim()) next.phone = "請輸入電話";
+        else delete next.phone;
+      } else if (field === "email") {
+        if (!formData.email.trim()) next.email = "請輸入電子郵件";
+        else if (!emailRegex.test(formData.email))
+          next.email = "請輸入有效的電子郵件格式";
+        else delete next.email;
+      } else if (field === "address") {
+        if (shippingMethod === "home" && !formData.address.trim())
+          next.address = "請輸入收件地址";
+        else delete next.address;
+      }
+      return next;
+    });
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (submitting) return;
@@ -550,6 +574,7 @@ function CheckoutPageInner() {
                         id="name"
                         value={formData.name}
                         onChange={handleInputChange}
+                        onBlur={() => blurCheckoutField("name")}
                         className={cn(
                           "w-full h-10 rounded-lg border bg-background px-3 text-sm outline-none transition-all",
                           errors.name
@@ -574,6 +599,7 @@ function CheckoutPageInner() {
                         type="tel"
                         value={formData.phone}
                         onChange={handleInputChange}
+                        onBlur={() => blurCheckoutField("phone")}
                         className={cn(
                           "w-full h-10 rounded-lg border bg-background px-3 text-sm outline-none transition-all",
                           errors.phone
@@ -600,6 +626,7 @@ function CheckoutPageInner() {
                       type="email"
                       value={formData.email}
                       onChange={handleInputChange}
+                      onBlur={() => blurCheckoutField("email")}
                       className={cn(
                         "w-full h-10 rounded-lg border bg-background px-3 text-sm outline-none transition-all",
                         errors.email
@@ -687,6 +714,7 @@ function CheckoutPageInner() {
                         id="address"
                         value={formData.address}
                         onChange={handleInputChange}
+                        onBlur={() => blurCheckoutField("address")}
                         className={cn(
                           "w-full h-10 rounded-lg border bg-background px-3 text-sm outline-none transition-all",
                           errors.address

@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/use-wishlist";
 import { cn } from "@/lib/utils";
+import DOMPurify from "isomorphic-dompurify";
+import { stripHtmlToPlainText } from "@/lib/html/rich-text";
 
 const MADE_TO_ORDER_CATEGORIES = ["蛋糕", "甜點"] as const;
 
@@ -28,7 +30,8 @@ export function ProductInfo({ product }: { product: Product }) {
 
   const stock = product.stockQuantity;
   const hasStockField = stock !== undefined;
-  const outOfStock = hasStockField && stock <= 0;
+  const outOfStock =
+    product.status === "sold_out" || (hasStockField && stock <= 0);
   const maxSelectable = hasStockField ? Math.min(99, Math.max(0, stock)) : 99;
 
   const increment = () =>
@@ -44,7 +47,7 @@ export function ProductInfo({ product }: { product: Product }) {
   async function handleShare() {
     const url = typeof window !== "undefined" ? window.location.href : "";
     const title = product.name;
-    const text = product.description.slice(0, 160);
+    const text = stripHtmlToPlainText(product.description).slice(0, 160);
 
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
@@ -145,9 +148,9 @@ export function ProductInfo({ product }: { product: Product }) {
           {product.price}
         </p>
         <p className="text-sm text-muted-foreground">含稅，運費於結帳時計算</p>
-        {hasStockField && outOfStock && (
+        {outOfStock && (
           <p className="text-sm font-medium tabular-nums text-destructive">
-            暫無庫存
+            {product.status === "sold_out" ? "售完" : "暫無庫存"}
           </p>
         )}
       </div>
@@ -160,7 +163,18 @@ export function ProductInfo({ product }: { product: Product }) {
 
       <Separator />
 
-      <p className="text-base leading-relaxed text-muted-foreground">{product.description}</p>
+      {/<[a-z][\s\S]*>/i.test(product.description.trim()) ? (
+        <div
+          className="text-base leading-relaxed text-muted-foreground [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-6"
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(product.description),
+          }}
+        />
+      ) : (
+        <p className="whitespace-pre-wrap text-base leading-relaxed text-muted-foreground">
+          {product.description}
+        </p>
+      )}
 
       <div className="space-y-4 pt-2">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

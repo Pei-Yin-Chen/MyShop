@@ -20,7 +20,8 @@ export function ProductListCard({
   const { addItem } = useCart();
   const { isWishlisted, toggle, hydrated } = useWishlist(product.id);
   const outOfStock =
-    product.stockQuantity !== undefined && product.stockQuantity <= 0;
+    product.status === "sold_out" ||
+    (product.stockQuantity !== undefined && product.stockQuantity <= 0);
 
   return (
     <Card
@@ -28,16 +29,33 @@ export function ProductListCard({
       className="group scroll-mt-28 gap-0 overflow-hidden border border-border/80 bg-background py-0 shadow-sm transition-shadow hover:shadow-md"
     >
       <CardContent className="relative p-0">
-        <Link href={`/products/${product.id}`} className="block outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <Link
+          href={`/products/${product.id}`}
+          className="relative block overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <AspectRatio ratio={1} className="bg-muted/20">
             <Image
               src={product.image}
               alt={product.name}
               fill
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              className={cn(
+                "object-cover transition-transform duration-500 group-hover:scale-[1.03]",
+                outOfStock && "brightness-[0.92] saturate-[0.85]",
+              )}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           </AspectRatio>
+          {outOfStock && (
+            <>
+              <div
+                className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-background/50 to-transparent"
+                aria-hidden
+              />
+              <div className="absolute bottom-3 left-3 z-[2] rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold leading-snug text-primary-foreground shadow-md">
+                {product.status === "sold_out" ? "售完" : "暫無庫存"}
+              </div>
+            </>
+          )}
         </Link>
 
         <Button
@@ -79,9 +97,6 @@ export function ProductListCard({
               <span className="text-sm font-medium text-muted-foreground">NT$</span>
               &nbsp;{product.price}
             </p>
-            {outOfStock && (
-              <p className="mt-1 text-xs text-muted-foreground">暫無庫存</p>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <Button

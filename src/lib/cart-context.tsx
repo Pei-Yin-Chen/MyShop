@@ -20,6 +20,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 function maxQuantityForProduct(product: Product): number {
+  if (product.status === "sold_out") return 0;
   if (product.stockQuantity == null) return 99;
   return Math.min(99, Math.max(0, product.stockQuantity));
 }
@@ -76,6 +77,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addItem = (product: Product, quantity = 1) => {
+    if (product.status === "sold_out") return;
     const cap = maxQuantityForProduct(product);
     if (cap <= 0) return;
     const q = Math.min(Math.max(1, quantity), cap);

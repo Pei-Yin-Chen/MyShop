@@ -50,7 +50,7 @@ export function WishlistContent() {
         .from("products")
         .select(PRODUCT_LIST_SELECT)
         .in("id", ids)
-        .eq("status", "active");
+        .in("status", ["active", "sold_out"]);
 
       if (cancelled) return;
 
