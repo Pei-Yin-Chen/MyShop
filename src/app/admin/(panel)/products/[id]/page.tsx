@@ -31,6 +31,7 @@ export default async function AdminEditProductPage({
         stock_quantity,
         status,
         display_order,
+        is_featured,
         product_images ( id, image_url, alt_text, sort_order )
       `,
       )
@@ -68,6 +69,7 @@ export default async function AdminEditProductPage({
           stock_quantity: product.stock_quantity ?? 0,
           status: product.status ?? "draft",
           display_order: product.display_order,
+          is_featured: product.is_featured ?? false,
         }}
         sortedImages={sortedImages}
       />

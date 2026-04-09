@@ -1,11 +1,33 @@
-import { ChefHat, Cookie, Heart, Wheat } from "lucide-react";
+import {
+  Award,
+  ChefHat,
+  Cookie,
+  Handshake,
+  Heart,
+  Leaf,
+  Lightbulb,
+  Shield,
+  Sparkles,
+  Star,
+  Users,
+  Wheat,
+} from "lucide-react";
 import type { BrandPhilosophySectionContent } from "@/data/home-page-defaults";
+import { SECTION_CARD_BG_CLASS } from "@/lib/section-card-bg";
 
 const ICONS = {
   wheat: Wheat,
   chef_hat: ChefHat,
   heart: Heart,
   cookie: Cookie,
+  sparkles: Sparkles,
+  shield: Shield,
+  users: Users,
+  handshake: Handshake,
+  leaf: Leaf,
+  award: Award,
+  star: Star,
+  lightbulb: Lightbulb,
 } as const;
 
 const ICON_TONE: Record<BrandPhilosophySectionContent["items"][number]["iconKey"], string> = {
@@ -13,16 +35,18 @@ const ICON_TONE: Record<BrandPhilosophySectionContent["items"][number]["iconKey"
   chef_hat: "text-primary",
   heart: "text-[oklch(0.5_0.08_25)]",
   cookie: "text-[oklch(0.45_0.05_55)]",
-};
-
-const BG_VARIANT: Record<BrandPhilosophySectionContent["items"][number]["bgVariant"], string> = {
-  cream: "bg-[oklch(0.96_0.02_85)]",
-  peach: "bg-[oklch(0.96_0.025_55)]",
-  rose: "bg-[oklch(0.97_0.02_75)]",
-  sage: "bg-[oklch(0.95_0.02_95)]",
+  sparkles: "text-[oklch(0.55_0.12_290)]",
+  shield: "text-[oklch(0.48_0.06_250)]",
+  users: "text-[oklch(0.5_0.06_230)]",
+  handshake: "text-[oklch(0.52_0.07_145)]",
+  leaf: "text-[oklch(0.5_0.08_145)]",
+  award: "text-[oklch(0.52_0.09_75)]",
+  star: "text-[oklch(0.58_0.12_85)]",
+  lightbulb: "text-[oklch(0.55_0.1_95)]",
 };
 
 export function BrandPhilosophy({ content }: { content: BrandPhilosophySectionContent }) {
+  if (content.enabled === false) return null;
   return (
     <section className="border-t border-border/60 bg-background py-24">
       <div className="container mx-auto px-4">
@@ -43,7 +67,7 @@ export function BrandPhilosophy({ content }: { content: BrandPhilosophySectionCo
                 className="flex flex-col items-center rounded-2xl border border-border/60 bg-card p-8 text-center shadow-sm transition-shadow hover:shadow-md"
               >
                 <div
-                  className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl ${BG_VARIANT[item.bgVariant]}`}
+                  className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl ${SECTION_CARD_BG_CLASS[item.bgVariant]}`}
                 >
                   <Icon className={`h-9 w-9 ${ICON_TONE[item.iconKey]}`} />
                 </div>

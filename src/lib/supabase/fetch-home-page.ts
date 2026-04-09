@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import {
   defaultHomePageContent,
+  PHILOSOPHY_ICON_KEYS,
+  SECTION_CARD_BG_VARIANTS,
+  SHOPPING_RULE_ICON_KEYS,
   type HomePageSectionContentMap,
   type HeroSectionContent,
   type FeaturedIntroContent,
@@ -9,11 +12,14 @@ import {
   type ShoppingRulesSectionContent,
 } from "@/data/home-page-defaults";
 
+const ruleIconKeys = new Set<string>(SHOPPING_RULE_ICON_KEYS);
+const ruleBgKeys = new Set<string>(SECTION_CARD_BG_VARIANTS);
+
 function isRecord(x: unknown): x is Record<string, unknown> {
   return x != null && typeof x === "object" && !Array.isArray(x);
 }
 
-function pickHero(raw: unknown): HeroSectionContent {
+export function normalizeHero(raw: unknown): HeroSectionContent {
   const d = defaultHomePageContent.hero;
   if (!isRecord(raw)) return d;
   const imgs = raw.images;
@@ -50,7 +56,7 @@ function pickHero(raw: unknown): HeroSectionContent {
   };
 }
 
-function pickFeaturedIntro(raw: unknown): FeaturedIntroContent {
+export function normalizeFeaturedIntro(raw: unknown): FeaturedIntroContent {
   const d = defaultHomePageContent.featured_intro;
   if (!isRecord(raw)) return d;
   return {
@@ -61,7 +67,7 @@ function pickFeaturedIntro(raw: unknown): FeaturedIntroContent {
   };
 }
 
-function pickGallery(raw: unknown): ProductGallerySectionContent {
+export function normalizeGallery(raw: unknown): ProductGallerySectionContent {
   const d = defaultHomePageContent.product_gallery;
   if (!isRecord(raw)) return d;
   const itemsRaw = raw.items;
@@ -81,16 +87,17 @@ function pickGallery(raw: unknown): ProductGallerySectionContent {
     })
     .filter(Boolean) as ProductGallerySectionContent["items"];
   return {
+    enabled: typeof raw.enabled === "boolean" ? raw.enabled : d.enabled,
     title: typeof raw.title === "string" ? raw.title : d.title,
     subtitle: typeof raw.subtitle === "string" ? raw.subtitle : d.subtitle,
     items: items.length > 0 ? [...items].sort((a, b) => a.sortOrder - b.sortOrder) : d.items,
   };
 }
 
-const philosophyIconKeys = new Set(["wheat", "chef_hat", "heart", "cookie"]);
+const philosophyIconKeys = new Set<string>(PHILOSOPHY_ICON_KEYS);
 const philosophyBgKeys = new Set(["cream", "peach", "rose", "sage"]);
 
-function pickPhilosophy(raw: unknown): BrandPhilosophySectionContent {
+export function normalizePhilosophy(raw: unknown): BrandPhilosophySectionContent {
   const d = defaultHomePageContent.brand_philosophy;
   if (!isRecord(raw)) return d;
   const itemsRaw = raw.items;
@@ -114,15 +121,14 @@ function pickPhilosophy(raw: unknown): BrandPhilosophySectionContent {
     })
     .filter(Boolean) as BrandPhilosophySectionContent["items"];
   return {
+    enabled: typeof raw.enabled === "boolean" ? raw.enabled : d.enabled,
     title: typeof raw.title === "string" ? raw.title : d.title,
     subtitle: typeof raw.subtitle === "string" ? raw.subtitle : d.subtitle,
     items: items.length > 0 ? items : d.items,
   };
 }
 
-const ruleIconKeys = new Set(["truck", "clock", "refrigerator", "credit_card"]);
-
-function pickRules(raw: unknown): ShoppingRulesSectionContent {
+export function normalizeRules(raw: unknown): ShoppingRulesSectionContent {
   const d = defaultHomePageContent.shopping_rules;
   if (!isRecord(raw)) return d;
   const itemsRaw = raw.items;
@@ -135,14 +141,21 @@ function pickRules(raw: unknown): ShoppingRulesSectionContent {
       const title = it.title;
       const description = it.description;
       if (typeof title !== "string" || typeof description !== "string") return null;
+      const bgRaw = it.bgVariant;
+      const bgVariant =
+        typeof bgRaw === "string" && ruleBgKeys.has(bgRaw)
+          ? (bgRaw as ShoppingRulesSectionContent["items"][number]["bgVariant"])
+          : "cream";
       return {
         iconKey: iconKey as ShoppingRulesSectionContent["items"][number]["iconKey"],
         title,
         description,
+        bgVariant,
       };
     })
     .filter(Boolean) as ShoppingRulesSectionContent["items"];
   return {
+    enabled: typeof raw.enabled === "boolean" ? raw.enabled : d.enabled,
     title: typeof raw.title === "string" ? raw.title : d.title,
     subtitle: typeof raw.subtitle === "string" ? raw.subtitle : d.subtitle,
     items: items.length > 0 ? items : d.items,
@@ -165,10 +178,10 @@ export async function fetchHomePageContent(): Promise<HomePageSectionContentMap>
   }
 
   return {
-    hero: pickHero(byKey.get("hero")),
-    featured_intro: pickFeaturedIntro(byKey.get("featured_intro")),
-    product_gallery: pickGallery(byKey.get("product_gallery")),
-    brand_philosophy: pickPhilosophy(byKey.get("brand_philosophy")),
-    shopping_rules: pickRules(byKey.get("shopping_rules")),
+    hero: normalizeHero(byKey.get("hero")),
+    featured_intro: normalizeFeaturedIntro(byKey.get("featured_intro")),
+    product_gallery: normalizeGallery(byKey.get("product_gallery")),
+    brand_philosophy: normalizePhilosophy(byKey.get("brand_philosophy")),
+    shopping_rules: normalizeRules(byKey.get("shopping_rules")),
   };
 }

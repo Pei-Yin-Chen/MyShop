@@ -6,6 +6,7 @@ import { updateMyProfile, type UpdateProfileState } from "@/app/member/actions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BirthdayInput } from "@/app/member/profile/birthday-input";
+import { useActionSuccessToast } from "@/lib/hooks/use-action-success-toast";
 
 type Props = {
   initial: {
@@ -24,10 +25,14 @@ export function ProfileForm({ initial }: Props) {
   const router = useRouter();
   const [mobilePhone, setMobilePhone] = useState(() => initial.mobilePhone);
 
+  useActionSuccessToast(state.ok === true ? state : undefined, "已更新個人資料");
+
   useEffect(() => {
     if (!state?.ok) return;
     window.dispatchEvent(new Event("profile-updated"));
-    router.refresh();
+    queueMicrotask(() => {
+      router.refresh();
+    });
   }, [router, state]);
 
   const fieldErrors = (state && !state.ok ? state.fieldErrors : undefined) ?? {};
@@ -141,11 +146,6 @@ export function ProfileForm({ initial }: Props) {
       {serverError && (
         <div className="text-sm text-red-500 font-medium bg-red-50 p-3 rounded-md border border-red-100">
           {serverError}
-        </div>
-      )}
-      {state?.ok && (
-        <div className="text-sm text-green-700 font-medium bg-green-50 p-3 rounded-md border border-green-100">
-          已更新個人資料
         </div>
       )}
 

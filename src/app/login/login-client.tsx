@@ -33,7 +33,6 @@ export default function LoginClient() {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/'
@@ -62,8 +61,7 @@ export default function LoginClient() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setErrors({})
-    setMessage(null)
-    
+
     const formData = new FormData(event.currentTarget)
     const validationErrors = validate(formData)
     
@@ -186,12 +184,6 @@ export default function LoginClient() {
                 {errors.server}
               </div>
             )}
-            {message && (
-              <div className="text-sm text-green-600 font-medium text-center bg-green-50 p-2 rounded-md border border-green-100">
-                {message}
-              </div>
-            )}
-            
             <Button
               type="submit"
               size="lg"
@@ -210,7 +202,6 @@ export default function LoginClient() {
               onClick={() => {
                 setIsLogin(!isLogin)
                 setErrors({})
-                setMessage(null)
                 setShowPassword(false)
               }}
               className="text-primary font-medium underline-offset-4 hover:underline cursor-pointer ml-1"

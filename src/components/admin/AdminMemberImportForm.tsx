@@ -3,12 +3,15 @@
 import { useActionState } from "react";
 import { importMemberFromOrderAction, type MemberActionState } from "@/app/admin/(panel)/members/actions";
 import { Button } from "@/components/ui/button";
+import { useActionSuccessToast } from "@/lib/hooks/use-action-success-toast";
 
 export function AdminMemberImportForm() {
   const [state, formAction, pending] = useActionState(
     importMemberFromOrderAction,
     undefined as MemberActionState | undefined,
   );
+
+  useActionSuccessToast(state, "匯入完成");
 
   return (
     <form action={formAction} className="space-y-3">
@@ -30,9 +33,6 @@ export function AdminMemberImportForm() {
       </div>
       {state?.ok === false && state.error ? (
         <p className="text-sm text-destructive">{state.error}</p>
-      ) : null}
-      {state?.ok && state.message ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400">{state.message}</p>
       ) : null}
       <Button type="submit" disabled={pending} size="lg" className="rounded-full">
         {pending ? "處理中…" : "從訂單匯入購買會員"}

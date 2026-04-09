@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { FormMenuSelect } from "@/components/ui/select";
 import { SHIPPING_CARRIER_OPTIONS } from "@/lib/orders/shipping-carriers";
 import { cn } from "@/lib/utils";
+import { useActionSuccessToast } from "@/lib/hooks/use-action-success-toast";
 
 export function AdminOrderShipButton({
   orderId,
@@ -36,6 +37,11 @@ export function AdminOrderShipButton({
     setOpen(false);
     router.refresh();
   }, [state, router]);
+
+  useActionSuccessToast(
+    state,
+    variant === "store_pickup" ? "已標記門市可取貨" : "已登記出貨",
+  );
 
   useEffect(() => {
     if (!open) return;

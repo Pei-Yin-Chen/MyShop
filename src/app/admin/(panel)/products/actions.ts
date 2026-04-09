@@ -29,7 +29,86 @@ export type ProductFormState =
   | { ok: true; productId?: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
+export type BulkProductActionState =
+  | { ok: true; message: string }
+  | { ok: false; error: string };
+
 const pathsToRevalidate = ["/admin/products", "/products", "/"];
+
+function parseIdsFromFormData(formData: FormData): string[] {
+  const raw = String(formData.get("ids") ?? "").trim();
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export async function bulkSetProductStatusAction(
+  _prev: BulkProductActionState | undefined,
+  formData: FormData,
+): Promise<BulkProductActionState> {
+  const { supabase, error: authError } = await getAdminSupabase();
+  if (!supabase || authError) return { ok: false, error: authError ?? "未授權" };
+
+  const ids = parseIdsFromFormData(formData);
+  const status = String(formData.get("status") ?? "").trim();
+  if (ids.length === 0) return { ok: false, error: "請先選擇商品" };
+  if (!["draft", "active", "archived", "sold_out"].includes(status)) {
+    return { ok: false, error: "狀態不正確" };
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("products")
+    .update({ status, updated_at: now })
+    .in("id", ids);
+  if (error) return { ok: false, error: error.message };
+
+  for (const p of pathsToRevalidate) revalidatePath(p);
+  return { ok: true, message: `已更新 ${ids.length} 筆商品狀態` };
+}
+
+export async function bulkSetProductFeaturedAction(
+  _prev: BulkProductActionState | undefined,
+  formData: FormData,
+): Promise<BulkProductActionState> {
+  const { supabase, error: authError } = await getAdminSupabase();
+  if (!supabase || authError) return { ok: false, error: authError ?? "未授權" };
+
+  const ids = parseIdsFromFormData(formData);
+  const featuredRaw = String(formData.get("featured") ?? "").trim();
+  if (ids.length === 0) return { ok: false, error: "請先選擇商品" };
+  if (!["true", "false"].includes(featuredRaw)) return { ok: false, error: "參數不正確" };
+  const is_featured = featuredRaw === "true";
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("products")
+    .update({ is_featured, updated_at: now })
+    .in("id", ids);
+  if (error) return { ok: false, error: error.message };
+
+  for (const p of pathsToRevalidate) revalidatePath(p);
+  return { ok: true, message: is_featured ? `已設為精選（${ids.length} 筆）` : `已取消精選（${ids.length} 筆）` };
+}
+
+export async function bulkDeleteProductsAction(
+  _prev: BulkProductActionState | undefined,
+  formData: FormData,
+): Promise<BulkProductActionState> {
+  const { supabase, error: authError } = await getAdminSupabase();
+  if (!supabase || authError) return { ok: false, error: authError ?? "未授權" };
+
+  const ids = parseIdsFromFormData(formData);
+  if (ids.length === 0) return { ok: false, error: "請先選擇商品" };
+
+  const { error } = await supabase.from("products").delete().in("id", ids);
+  if (error) return { ok: false, error: error.message };
+
+  for (const p of pathsToRevalidate) revalidatePath(p);
+  return { ok: true, message: `已刪除 ${ids.length} 筆商品` };
+}
 
 export async function createProductAction(
   _prev: ProductFormState | undefined,
@@ -46,6 +125,7 @@ export async function createProductAction(
   const categoryId = String(formData.get("category_id") ?? "").trim();
   const status = String(formData.get("status") ?? "draft");
   const displayOrderRaw = String(formData.get("display_order") ?? "");
+  const isFeatured = formData.get("is_featured") === "on";
 
   const fieldErrors: Record<string, string> = {};
   const nameMsg = validateProductNameField(nameRaw);
@@ -82,7 +162,7 @@ export async function createProductAction(
       details: [],
       rating: 4.5,
       review_count: 0,
-      is_featured: false,
+      is_featured: isFeatured,
     })
     .select("id")
     .single();
@@ -110,6 +190,7 @@ export async function updateProductAction(
   const categoryId = String(formData.get("category_id") ?? "").trim();
   const status = String(formData.get("status") ?? "draft");
   const displayOrderRaw = String(formData.get("display_order") ?? "");
+  const isFeatured = formData.get("is_featured") === "on";
 
   const fieldErrors: Record<string, string> = {};
   const nameMsg = validateProductNameField(nameRaw);
@@ -141,6 +222,7 @@ export async function updateProductAction(
       stock_quantity,
       status,
       display_order,
+      is_featured: isFeatured,
       updated_at: new Date().toISOString(),
     })
     .eq("id", productId);

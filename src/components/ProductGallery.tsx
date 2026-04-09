@@ -25,6 +25,7 @@ function GallerySlide({
 }
 
 export function ProductGallery({ content }: { content: ProductGallerySectionContent }) {
+  if (content.enabled === false) return null;
   const galleryImages = content.items;
 
   return (

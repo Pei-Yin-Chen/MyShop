@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { ChevronDown, Check } from "lucide-react";
@@ -91,6 +92,16 @@ export interface FormMenuSelectProps {
   onValueChange?: (value: string) => void;
   disabled?: boolean;
   /**
+   * 各選項與觸發器旁顯示圖示（例如 Lucide）。有設定時預設不顯示右側勾選，改以圖示辨識。
+   */
+  renderOptionIcon?: (value: string) => ReactNode;
+  /** 圖示在文字左側或右側（預設 start） */
+  optionIconPlacement?: "start" | "end";
+  /**
+   * 選中項右側是否顯示勾選；未指定時：無 renderOptionIcon 為 true，有則為 false。
+   */
+  showSelectedCheck?: boolean;
+  /**
    * 下拉定位層 class（預設 z-[80]）。置於高 z-index 的 dialog 內時請改為例如 z-[220]，
    * 否則選單會被遮罩蓋住。
    */
@@ -111,6 +122,9 @@ export function FormMenuSelect({
   requestSubmitParentForm,
   onValueChange,
   disabled,
+  renderOptionIcon,
+  optionIconPlacement = "start",
+  showSelectedCheck: showSelectedCheckProp,
   positionerClassName,
 }: FormMenuSelectProps) {
   const fullOptions = useMemo(() => {
@@ -127,6 +141,9 @@ export function FormMenuSelect({
 
   const currentLabel =
     fullOptions.find((o) => o.value === value)?.label ?? "";
+
+  const showSelectedCheck =
+    showSelectedCheckProp ?? renderOptionIcon === undefined;
 
   function commitValue(next: string) {
     setValue(next);
@@ -154,7 +171,15 @@ export function FormMenuSelect({
               "border-destructive ring-2 ring-destructive/10 data-[open]:border-destructive data-[open]:ring-destructive/20",
           )}
         >
-          <span className="min-w-0 flex-1 truncate text-left">{currentLabel}</span>
+          <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
+            {renderOptionIcon && optionIconPlacement === "start" ? (
+              <span className="shrink-0">{renderOptionIcon(value)}</span>
+            ) : null}
+            <span className="min-w-0 flex-1 truncate">{currentLabel}</span>
+            {renderOptionIcon && optionIconPlacement === "end" ? (
+              <span className="shrink-0">{renderOptionIcon(value)}</span>
+            ) : null}
+          </span>
           <ChevronDown className="ml-2 size-4 shrink-0 text-muted-foreground opacity-70 transition-transform group-data-[open]:rotate-180" />
         </MenuPrimitive.Trigger>
 
@@ -174,17 +199,26 @@ export function FormMenuSelect({
                     key={option.value === "" ? "__empty__" : option.value}
                     onClick={() => commitValue(option.value)}
                     className={cn(
-                      "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-9 text-sm outline-none transition-colors hover:bg-primary/10 hover:text-primary",
+                      "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-3 text-sm outline-none transition-colors hover:bg-primary/10 hover:text-primary",
+                      showSelectedCheck ? "pr-9" : "pr-3",
                       value === option.value &&
                         "bg-primary/5 font-medium text-primary",
                     )}
                   >
-                    {option.label}
-                    {value === option.value && (
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      {renderOptionIcon && optionIconPlacement === "start" ? (
+                        <span className="shrink-0">{renderOptionIcon(option.value)}</span>
+                      ) : null}
+                      <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                      {renderOptionIcon && optionIconPlacement === "end" ? (
+                        <span className="shrink-0">{renderOptionIcon(option.value)}</span>
+                      ) : null}
+                    </span>
+                    {showSelectedCheck && value === option.value ? (
                       <span className="absolute right-3 flex items-center justify-center">
                         <Check className="size-4" />
                       </span>
-                    )}
+                    ) : null}
                   </MenuPrimitive.Item>
                 ))}
               </div>

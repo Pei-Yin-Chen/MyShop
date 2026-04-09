@@ -1,13 +1,11 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { AdminDeleteProductButton } from "@/components/admin/AdminDeleteProductButton";
 import { FormMenuSelect } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { AdminProductsTableClient, type AdminProductsRow } from "@/components/admin/AdminProductsTableClient";
 import {
   ADMIN_PRODUCT_STATUS_FILTER_VALUES,
   ADMIN_PRODUCTS_PAGE_SIZE,
@@ -140,6 +138,18 @@ export default async function AdminProductsPage({
 
   const products = raw as Row[] | null;
   const loadError = countError ?? error;
+  const rows: AdminProductsRow[] =
+    (products ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      stock_quantity: p.stock_quantity,
+      status: p.status,
+      display_order: p.display_order,
+      last_edited: formatLastEdited(p.updated_at),
+      image_url: p.image_url,
+      category_name: p.product_categories?.name ?? null,
+    })) ?? [];
 
   return (
     <div className="space-y-6">
@@ -240,104 +250,16 @@ export default async function AdminProductsPage({
       </form>
 
       <Card className="border-none shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-muted/50 border-b border-border text-muted-foreground font-medium">
-              <tr>
-                <th className="px-4 py-3 w-14">圖</th>
-                <th className="px-4 py-3 text-left">名稱</th>
-                <th className="px-4 py-3">分類</th>
-                <th className="px-4 py-3 text-left">價格</th>
-                <th className="px-4 py-3 text-left">庫存</th>
-                <th className="px-4 py-3 text-left">狀態</th>
-                <th className="px-4 py-3 text-left">顯示順序</th>
-                <th className="px-4 py-3 text-left">最後編輯</th>
-                <th className="px-4 py-3 text-right">操作</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border bg-card">
-              {products?.map((p) => (
-                <tr key={p.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="relative size-10 overflow-hidden rounded-md border border-border bg-muted">
-                      {p.image_url ? (
-                        <Image
-                          src={p.image_url}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="40px"
-                        />
-                      ) : (
-                        <span className="flex h-full items-center justify-center text-[10px] text-muted-foreground">
-                          —
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-foreground max-w-[200px] truncate">
-                    {p.name}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {p.product_categories?.name ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">{p.price}</td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {p.stock_quantity ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full border px-2 py-0.5 text-xs font-medium",
-                        p.status === "active" &&
-                          "border-emerald-200/80 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100",
-                        p.status === "sold_out" &&
-                          "border-orange-300/85 bg-orange-100 text-orange-950 dark:border-orange-800 dark:bg-orange-950/45 dark:text-orange-100",
-                        p.status === "archived" &&
-                          "border-neutral-200 bg-neutral-100 text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800/80 dark:text-neutral-200",
-                        p.status === "draft" &&
-                          "border-slate-300/90 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-200",
-                      )}
-                    >
-                      {p.status ? STATUS_LABEL[p.status] ?? p.status : "—"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">{p.display_order}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-muted-foreground tabular-nums text-xs">
-                    {formatLastEdited(p.updated_at)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-0.5">
-                      <Link
-                        href={`/admin/products/${p.id}`}
-                        className={cn(
-                          buttonVariants({ variant: "ghost", size: "icon-sm" }),
-                          "text-muted-foreground hover:text-foreground",
-                        )}
-                        title="編輯"
-                        aria-label={`編輯「${p.name}」`}
-                      >
-                        <Pencil className="size-4" aria-hidden />
-                      </Link>
-                      <AdminDeleteProductButton productId={p.id} productName={p.name} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {(!products || products.length === 0) && (
-                <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-muted-foreground">
-                    {loadError
-                      ? `載入失敗：${loadError.message}`
-                      : hasActiveFilters
-                        ? "找不到符合條件的商品"
-                        : "尚無商品"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <AdminProductsTableClient
+          rows={rows}
+          emptyMessage={
+            loadError
+              ? `載入失敗：${loadError.message}`
+              : hasActiveFilters
+                ? "找不到符合條件的商品"
+                : "尚無商品"
+          }
+        />
 
         {total > 0 && (
           <div className="flex flex-col gap-3 border-t border-border bg-muted/20 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">

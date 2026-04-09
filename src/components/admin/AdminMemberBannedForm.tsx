@@ -6,6 +6,7 @@ import {
   type MemberActionState,
 } from "@/app/admin/(panel)/members/actions";
 import { Button } from "@/components/ui/button";
+import { useActionSuccessToast } from "@/lib/hooks/use-action-success-toast";
 
 export function AdminMemberBannedForm({
   memberId,
@@ -21,6 +22,8 @@ export function AdminMemberBannedForm({
     undefined as MemberActionState | undefined,
   );
 
+  useActionSuccessToast(state, "已更新會員狀態");
+
   if (disabled) {
     return (
       <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
@@ -35,9 +38,6 @@ export function AdminMemberBannedForm({
       <input type="hidden" name="banned" value={isBanned ? "false" : "true"} />
       {state?.ok === false && state.error ? (
         <p className="text-sm text-destructive">{state.error}</p>
-      ) : null}
-      {state?.ok && state.message ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400">{state.message}</p>
       ) : null}
       <Button
         type="submit"

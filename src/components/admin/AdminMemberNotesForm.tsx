@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState } from "react";
 import {
   addMemberAdminNoteAction,
   type MemberActionState,
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
 import { ADMIN_MEMBER_NOTE_MAX_CHARS } from "@/lib/admin/admin-member-notes";
+import { useActionSuccessToast } from "@/lib/hooks/use-action-success-toast";
 
 export type AdminMemberNoteRow = {
   id: string;
@@ -29,19 +30,8 @@ export function AdminMemberNotesForm({
     addMemberAdminNoteAction,
     undefined as MemberActionState | undefined,
   );
-  const [successHidden, setSuccessHidden] = useState(false);
 
-  useEffect(() => {
-    if (!state?.ok) {
-      setSuccessHidden(false);
-      return;
-    }
-    setSuccessHidden(false);
-    const id = window.setTimeout(() => setSuccessHidden(true), 4000);
-    return () => window.clearTimeout(id);
-  }, [state]);
-
-  const showSuccess = Boolean(state?.ok && state.message && !successHidden);
+  useActionSuccessToast(state, "已新增備註");
 
   const fieldErrors =
     state && !state.ok ? state.fieldErrors : undefined;
@@ -106,11 +96,6 @@ export function AdminMemberNotesForm({
         </div>
         {serverError ? (
           <p className="text-sm text-destructive">{serverError}</p>
-        ) : null}
-        {showSuccess && state?.ok ? (
-          <p className="text-sm text-emerald-700 dark:text-emerald-400">
-            {state.message ?? "已新增備註"}
-          </p>
         ) : null}
         <Button type="submit" size="lg" className="rounded-full" disabled={pending}>
           {pending ? "送出中…" : "新增備註"}

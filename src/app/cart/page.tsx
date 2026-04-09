@@ -6,7 +6,7 @@ import { Trash2, Minus, Plus, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Footer } from "@/components/Footer";
+import { FooterClient } from "@/components/FooterClient";
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, totalPrice, totalItems } = useCart();
@@ -169,7 +169,7 @@ export default function CartPage() {
         </div>
       </main>
 
-      <Footer />
+      <FooterClient />
     </div>
   );
 }

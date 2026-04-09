@@ -1,6 +1,7 @@
 "use client";
 
 import React, {
+  startTransition,
   Suspense,
   useEffect,
   useLayoutEffect,
@@ -22,7 +23,7 @@ import {
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Footer } from "@/components/Footer";
+import { FooterClient } from "@/components/FooterClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -112,16 +113,24 @@ function CheckoutPageInner() {
     const pay = searchParams.get("pay");
     if (!pay) return;
     const orderId = searchParams.get("orderId");
-    /** 付款失敗／金額不符改走獨立頁（與成功頁類似），勿留在結帳頁以免空購物車導去購物車 */
-    if (orderId && (pay === "failed" || pay === "amt")) {
-      const qs = new URLSearchParams({ orderId });
-      qs.set("reason", pay === "amt" ? "amt" : "failed");
-      router.replace(`/checkout/payment-failed?${qs}`, { scroll: false });
-      return;
-    }
-    setStickyPayCode(pay);
-    setRecentPayRedirect(true);
-    router.replace("/checkout", { scroll: false });
+    /** 延後一幀再導向，避免 App Router 尚未完成初始化時 dispatch（Internal: Router action dispatched before initialization） */
+    const id = requestAnimationFrame(() => {
+      /** 付款失敗／金額不符改走獨立頁（與成功頁類似），勿留在結帳頁以免空購物車導去購物車 */
+      if (orderId && (pay === "failed" || pay === "amt")) {
+        const qs = new URLSearchParams({ orderId });
+        qs.set("reason", pay === "amt" ? "amt" : "failed");
+        startTransition(() => {
+          router.replace(`/checkout/payment-failed?${qs}`, { scroll: false });
+        });
+        return;
+      }
+      setStickyPayCode(pay);
+      setRecentPayRedirect(true);
+      startTransition(() => {
+        router.replace("/checkout", { scroll: false });
+      });
+    });
+    return () => cancelAnimationFrame(id);
   }, [searchParams, router]);
 
   /** 只在網址仍帶 pay= 時顯示紅字（replace 後改由 cardStickyMessage） */
@@ -529,7 +538,7 @@ function CheckoutPageInner() {
             </Card>
           </div>
         </main>
-        <Footer />
+        <FooterClient />
       </div>
     );
   }
@@ -859,7 +868,7 @@ function CheckoutPageInner() {
         </div>
       </main>
 
-      <Footer />
+      <FooterClient />
     </div>
   );
 }

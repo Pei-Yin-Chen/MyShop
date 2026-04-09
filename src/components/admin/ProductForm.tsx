@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { ProductDescriptionEditor } from "@/components/admin/ProductDescriptionEditor";
 import { FormMenuSelect } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useActionSuccessToast } from "@/lib/hooks/use-action-success-toast";
 
 /** 與結帳頁「顧客基本資料」欄位一致：label 與輸入框間距 */
 const labelClass =
@@ -62,6 +63,7 @@ export function ProductForm({
     stock_quantity: number;
     status: string;
     display_order: number;
+    is_featured: boolean;
   };
   /** 編輯頁：在送出商品表單前執行（例如先寫入圖片排序）；回傳 false 則中止儲存 */
   onBeforeSave?: () => Promise<boolean>;
@@ -80,6 +82,8 @@ export function ProductForm({
     undefined,
   );
 
+  useActionSuccessToast(state, mode === "create" ? "已建立商品" : "已儲存變更");
+
   const [nameStr, setNameStr] = useState(() => initial?.name ?? "");
   const [priceStr, setPriceStr] = useState(() =>
     initial != null ? String(initial.price) : "",
@@ -90,6 +94,7 @@ export function ProductForm({
   const [displayOrderStr, setDisplayOrderStr] = useState(() =>
     initial != null ? String(initial.display_order) : "0",
   );
+  const [isFeatured, setIsFeatured] = useState(() => initial?.is_featured ?? false);
   const [clientFieldErrors, setClientFieldErrors] = useState<{
     name?: string;
     price?: string;
@@ -117,6 +122,7 @@ export function ProductForm({
     setPriceStr(String(initial.price));
     setStockStr(String(initial.stock_quantity));
     setDisplayOrderStr(String(initial.display_order));
+    setIsFeatured(initial.is_featured);
   }, [initial?.id]);
 
   const fieldErrors = state && !state.ok ? state.fieldErrors : undefined;
@@ -252,10 +258,10 @@ export function ProductForm({
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2">
             <label className={labelClass} htmlFor="price">
-              價格（NT$，整數）
+              價格（NT$）
             </label>
             <input
               id="price"
@@ -322,35 +328,36 @@ export function ProductForm({
               </p>
             )}
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <label className={labelClass} htmlFor="category_id">
-            分類
-          </label>
-          <FormMenuSelect
-            id="category_id"
-            name="category_id"
-            required
-            defaultValue={initial?.category_id ?? ""}
-            invalid={!!fieldErrors?.category_id}
-            emptyOption={{ label: "請選擇" }}
-            options={categories.map((c) => ({ value: c.id, label: c.name }))}
-          />
-          {fieldErrors?.category_id && (
-            <p className="text-xs text-destructive animate-in fade-in slide-in-from-top-1 duration-200">
-              {fieldErrors.category_id}
+          <div className="space-y-2">
+            <label className={labelClass} htmlFor="category_id">
+              分類
+            </label>
+            <FormMenuSelect
+              id="category_id"
+              name="category_id"
+              required
+              defaultValue={initial?.category_id ?? ""}
+              invalid={!!fieldErrors?.category_id}
+              emptyOption={{ label: "請選擇" }}
+              options={categories.map((c) => ({ value: c.id, label: c.name }))}
+            />
+            {fieldErrors?.category_id && (
+              <p className="text-xs text-destructive animate-in fade-in slide-in-from-top-1 duration-200">
+                {fieldErrors.category_id}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground pt-0.5">
+              需新增分類請至{" "}
+              <Link
+                href="/admin/products/categories"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                商品分類
+              </Link>
             </p>
-          )}
-          <p className="text-xs text-muted-foreground pt-0.5">
-            需新增分類請至{" "}
-            <Link href="/admin/products/categories" className="font-medium text-primary underline-offset-4 hover:underline">
-              商品分類
-            </Link>
-          </p>
-        </div>
+          </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div className="space-y-2">
             <label className={labelClass} htmlFor="status">
               狀態
@@ -410,6 +417,25 @@ export function ProductForm({
         </div>
 
         <div className="space-y-2">
+          <span className={labelClass}>首頁精選</span>
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/80 bg-muted/20 px-3 py-3">
+            <input
+              type="checkbox"
+              name="is_featured"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="mt-0.5 size-4 shrink-0 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            />
+            <span className="text-sm leading-snug text-foreground">
+              顯示於首頁「主廚推薦」區
+              <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                僅「上架」或「售完」狀態的商品會出現在首頁；順序依「列表顯示順序」欄位（與全站列表共用排序）。
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div className="space-y-2">
           <label className={labelClass} htmlFor="description">
             描述
           </label>
@@ -433,19 +459,18 @@ export function ProductForm({
           <p className="text-sm text-destructive">{serverError}</p>
         )}
 
-        {mode === "create" && (
-          <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">
-            新增商品只需填寫基本資料並建立；尚無圖片上傳，建立成功後會進入編輯頁，再於「商品圖片」區新增即可。
+        <div className="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:items-start sm:justify-between">
+          <p className="text-xs text-muted-foreground sm:pr-6">
+            {mode === "create"
+              ? "新增商品只需填寫基本資料並建立；尚無圖片上傳，建立成功後會進入編輯頁，再於「商品圖片」區新增即可。"
+              : "基本資料（名稱、價格、描述等）修改後，請按「儲存變更」。"}
           </p>
-        )}
-        {mode === "edit" && (
-          <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">
-            下方「商品圖片」的修改會立即儲存；本表名稱、價格、描述等須按「儲存變更」。
-          </p>
-        )}
-
-        <div className="flex justify-end border-t border-border/60 pt-4">
-          <Button type="submit" disabled={isPending} className="min-w-[9rem]">
+          <Button
+            type="submit"
+            disabled={isPending}
+            size="lg"
+            className="min-w-[9rem] shrink-0 rounded-full"
+          >
             {isPending ? "儲存中…" : mode === "create" ? "建立商品" : "儲存變更"}
           </Button>
         </div>

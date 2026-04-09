@@ -8,6 +8,7 @@ import {
   type MarkStoreOrderPickedUpActionState,
 } from "@/app/admin/(panel)/orders/actions";
 import { Button } from "@/components/ui/button";
+import { useActionSuccessToast } from "@/lib/hooks/use-action-success-toast";
 
 /** 門市自取：顧客已取貨後改為「已完成」 */
 export function AdminOrderStoreMarkCompleteButton({ orderId }: { orderId: string }) {
@@ -28,6 +29,8 @@ export function AdminOrderStoreMarkCompleteButton({ orderId }: { orderId: string
     setOpen(false);
     router.refresh();
   }, [state, router]);
+
+  useActionSuccessToast(state, "已標記為已完成");
 
   useEffect(() => {
     if (!open) return;

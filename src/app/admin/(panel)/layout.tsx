@@ -1,20 +1,36 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { AdminSidebarNav } from '@/components/admin/AdminSidebarNav'
 import { AdminSignOutButton } from '@/components/admin/AdminSignOutButton'
+import { fetchSiteSettings } from '@/lib/supabase/fetch-site-settings'
 
-export default function AdminPanelLayout({
+export default async function AdminPanelLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const site = await fetchSiteSettings();
+
   return (
     <div className="grid min-h-0 flex-1 grid-cols-[16rem_1fr] overflow-hidden bg-muted/30">
       <aside className="flex min-h-0 flex-col overflow-y-auto border-r border-border bg-card text-foreground shadow-sm">
         <div className="border-b border-border p-6">
           <Link href="/admin" className="block">
-            <span className="text-xl font-semibold tracking-tight">
-              My<span className="text-primary">Pâtisserie</span>
-            </span>
+            {site.siteLogoUrl ? (
+              <Image
+                src={site.siteLogoUrl}
+                alt={site.siteTitle}
+                width={180}
+                height={40}
+                sizes="180px"
+                style={{ width: "auto", height: "auto" }}
+                className="h-7 w-auto max-w-full object-contain object-left"
+              />
+            ) : (
+              <span className="text-xl font-semibold tracking-tight">
+                {site.siteTitle}
+              </span>
+            )}
             <span className="mt-1 block text-xs font-medium text-muted-foreground">後台管理</span>
           </Link>
         </div>

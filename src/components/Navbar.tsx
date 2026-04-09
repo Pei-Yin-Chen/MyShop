@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { ShoppingCart, Menu, Heart, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -11,6 +12,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/app/auth/actions";
 import { User as SupabaseUser } from "@supabase/supabase-js";
+import { DEFAULT_SITE_SETTINGS, normalizeSiteSettings } from "@/lib/site-settings";
+import { SiteLogo } from "@/components/SiteLogo";
 
 function displayNameForUser(
   user: SupabaseUser,
@@ -24,13 +27,20 @@ function displayNameForUser(
   return user.email ?? "會員";
 }
 
-export function Navbar() {
+export function Navbar({
+  initialSiteTitle,
+  initialSiteLogoUrl,
+}: {
+  initialSiteTitle?: string;
+  initialSiteLogoUrl?: string;
+}) {
   const pathname = usePathname();
-  const router = useRouter();
   const { totalItems } = useCart();
   const [wishCount, setWishCount] = useState(0);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profileFullName, setProfileFullName] = useState<string | null>(null);
+  const [siteTitle, setSiteTitle] = useState<string>(initialSiteTitle || DEFAULT_SITE_SETTINGS.siteTitle);
+  const [siteLogoUrl, setSiteLogoUrl] = useState<string>(initialSiteLogoUrl ?? DEFAULT_SITE_SETTINGS.siteLogoUrl);
   const [authLoaded, setAuthLoaded] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
@@ -43,6 +53,16 @@ export function Navbar() {
         data: { user: u },
       } = await supabase.auth.getUser();
       setUser(u);
+      void supabase
+        .from("home_page_sections")
+        .select("content")
+        .eq("section_key", "site_settings")
+        .maybeSingle()
+        .then(({ data }) => {
+          const s = normalizeSiteSettings(data?.content);
+          setSiteTitle(s.siteTitle);
+          setSiteLogoUrl(s.siteLogoUrl);
+        });
       if (u) {
         const { data } = await supabase
           .from("profiles")
@@ -120,9 +140,8 @@ export function Navbar() {
     };
   }, [supabase, syncUser]);
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.refresh();
+  /** 僅用 Server Action 登出並 redirect，避免與 `router.refresh()` 競態（Next.js：Router action dispatched before initialization） */
+  function handleSignOut() {
     void signOut();
   }
 
@@ -134,10 +153,21 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center">
-            <span className="text-xl font-semibold tracking-tight text-foreground">
-              My<span className="text-primary">Pâtisserie</span>
-            </span>
+          <Link href="/" className="flex items-center gap-2" title={siteTitle}>
+            {siteLogoUrl.trim() ? (
+              <Image
+                src={siteLogoUrl.trim()}
+                alt={siteTitle}
+                width={220}
+                height={56}
+                priority
+                sizes="(max-width: 768px) 55vw, 220px"
+                style={{ width: "auto", height: "auto" }}
+                className="h-8 w-auto max-h-9 max-w-[min(220px,55vw)] object-contain object-left"
+              />
+            ) : (
+              <SiteLogo text={siteTitle} className="text-xl" />
+            )}
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex">
             <Link href="/products" className="transition-colors hover:text-foreground">

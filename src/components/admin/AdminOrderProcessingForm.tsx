@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState } from "react";
 import {
   saveAdminOrderProcessingAction,
   type OrderProcessingActionState,
@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FormMenuSelect } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useActionSuccessToast } from "@/lib/hooks/use-action-success-toast";
 import {
   ADMIN_ORDER_NOTE_MAX_CHARS,
   ORDER_ADMIN_NOTE_HANDLING_VALUES,
@@ -31,19 +32,9 @@ export function AdminOrderProcessingForm({
     saveAdminOrderProcessingAction,
     undefined as OrderProcessingActionState | undefined,
   );
-  const [successHidden, setSuccessHidden] = useState(false);
 
-  useEffect(() => {
-    if (!state?.ok) {
-      setSuccessHidden(false);
-      return;
-    }
-    setSuccessHidden(false);
-    const id = window.setTimeout(() => setSuccessHidden(true), 4000);
-    return () => window.clearTimeout(id);
-  }, [state]);
+  useActionSuccessToast(state, "已儲存");
 
-  const showSuccess = Boolean(state?.ok && state.message && !successHidden);
   const fieldErrors = state && !state.ok ? state.fieldErrors : undefined;
   const bodyError = fieldErrors?.body;
   const serverError =
@@ -130,9 +121,6 @@ export function AdminOrderProcessingForm({
       </div>
 
       {serverError ? <p className="text-xs text-destructive">{serverError}</p> : null}
-      {showSuccess && state?.ok ? (
-        <p className="text-xs text-emerald-700 dark:text-emerald-400">{state.message ?? "已儲存"}</p>
-      ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
         <p className="text-xs text-muted-foreground">只會更新您有變更的內容，其餘維持原樣。</p>
