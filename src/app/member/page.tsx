@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  orderStatusBadgeVariant,
+  orderStatusBadgeProps,
   orderStatusLabel,
 } from "@/lib/orders/order-status-display";
 
@@ -63,7 +63,7 @@ export default async function MemberIndexPage() {
                   <p className="mt-0.5 text-xs text-muted-foreground">{formatOrderDateTimeZh(o.created_at)}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={orderStatusBadgeVariant(o.status)}>
+                  <Badge {...orderStatusBadgeProps(o.status)}>
                     {orderStatusLabel(o.status)}
                   </Badge>
                   <span className="text-sm font-medium tabular-nums text-foreground">NT$ {o.total}</span>

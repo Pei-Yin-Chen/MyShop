@@ -12,9 +12,11 @@ import { PayuniPaymentDetailSection } from "@/components/PayuniPaymentDetailSect
 import { PayuniResumePaymentButton } from "@/components/PayuniResumePaymentButton";
 import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
 import {
-  orderStatusBadgeVariant,
+  orderStatusBadgeProps,
   orderStatusLabel,
 } from "@/lib/orders/order-status-display";
+import { orderLogisticsStatusLabel } from "@/lib/orders/order-logistics-display";
+import { shippingCarrierLabel } from "@/lib/orders/shipping-carriers";
 import { shouldOfferPayuniResumePayment } from "@/lib/payuni/should-offer-resume-payment";
 
 const IMAGE_PLACEHOLDER =
@@ -38,6 +40,9 @@ type OrderRow = {
   payuni_payment_type: string | null;
   payuni_payment_detail: PayuniPaymentDetailStored | null;
   payuni_expire_at: string | null;
+  shipping_carrier: string | null;
+  shipping_tracking_number: string | null;
+  shipped_at: string | null;
 };
 
 type OrderItemRow = {
@@ -96,7 +101,7 @@ export default async function MemberOrderDetailPage({
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select(
-      "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes, customer_note, payuni_payment_type, payuni_payment_detail, payuni_expire_at",
+      "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes, customer_note, payuni_payment_type, payuni_payment_detail, payuni_expire_at, shipping_carrier, shipping_tracking_number, shipped_at",
     )
     .eq("id", id)
     .eq("user_id", user?.id ?? "")
@@ -123,6 +128,11 @@ export default async function MemberOrderDetailPage({
     paymentLabelFromNotes(order.notes);
   const userNote =
     order.customer_note?.trim() || userNoteFromNotes(order.notes);
+  const logisticsLabel = orderLogisticsStatusLabel({
+    shippingMethod: order.shipping_method,
+    orderStatus: order.status,
+    shippedAt: order.shipped_at,
+  });
 
   return (
     <div className="space-y-6">
@@ -136,7 +146,7 @@ export default async function MemberOrderDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={orderStatusBadgeVariant(order.status)}>
+          <Badge {...orderStatusBadgeProps(order.status)}>
             {orderStatusLabel(order.status)}
           </Badge>
           <Button
@@ -267,6 +277,39 @@ export default async function MemberOrderDetailPage({
                 </span>
               </div>
             )}
+            <div className="flex justify-between gap-4 pt-1">
+              <span className="text-muted-foreground">物流狀態</span>
+              <span className="font-medium text-foreground">{logisticsLabel}</span>
+            </div>
+            {order.shipping_method === "home" && order.shipped_at ? (
+              <>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">物流公司</span>
+                  <span className="text-right font-medium text-foreground">
+                    {shippingCarrierLabel(order.shipping_carrier)}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">追蹤號碼</span>
+                  <span className="break-all text-right font-mono text-xs font-medium text-foreground sm:text-sm">
+                    {order.shipping_tracking_number ?? "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">出貨時間</span>
+                  <span className="text-right font-medium text-foreground">
+                    {formatOrderDateTimeZh(order.shipped_at)}
+                  </span>
+                </div>
+              </>
+            ) : order.shipping_method === "store" && order.shipped_at ? (
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">可取貨時間</span>
+                <span className="text-right font-medium text-foreground">
+                  {formatOrderDateTimeZh(order.shipped_at)}
+                </span>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 

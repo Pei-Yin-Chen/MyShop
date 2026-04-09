@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
 import {
-  orderStatusBadgeVariant,
+  orderStatusBadgeProps,
   orderStatusLabel,
 } from "@/lib/orders/order-status-display";
 import { Badge } from "@/components/ui/badge";
@@ -235,7 +235,7 @@ export default async function SuccessPage({
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-primary font-medium">
                     <CreditCard className="size-4 shrink-0" />
                     <span>付款狀態：</span>
-                    <Badge variant={orderStatusBadgeVariant(order.status)}>{paymentText}</Badge>
+                    <Badge {...orderStatusBadgeProps(order.status)}>{paymentText}</Badge>
                     {payuniMethodLabel ? (
                       <span className="w-full basis-full text-xs font-normal text-muted-foreground">
                         付款方式：{payuniMethodLabel}
@@ -245,7 +245,7 @@ export default async function SuccessPage({
                   <div className="flex flex-wrap items-center gap-2 text-sm text-primary font-medium">
                     <ShoppingBag className="size-4 shrink-0" />
                     <span>訂單狀態：</span>
-                    <Badge variant={orderStatusBadgeVariant(order.status)}>
+                    <Badge {...orderStatusBadgeProps(order.status)}>
                       {orderStatusLabel(order.status)}
                     </Badge>
                   </div>

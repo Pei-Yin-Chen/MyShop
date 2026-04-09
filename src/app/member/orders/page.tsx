@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  orderStatusBadgeVariant,
+  orderStatusBadgeProps,
   orderStatusLabel,
 } from "@/lib/orders/order-status-display";
 
@@ -80,7 +80,7 @@ export default async function MemberOrdersPage() {
                       {formatOrderDateTimeZh(o.created_at)}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={orderStatusBadgeVariant(o.status)}>
+                      <Badge {...orderStatusBadgeProps(o.status)}>
                         {orderStatusLabel(o.status)}
                       </Badge>
                     </td>

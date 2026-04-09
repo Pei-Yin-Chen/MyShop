@@ -22,7 +22,7 @@ import {
 import { AdminMemberBannedForm } from "@/components/admin/AdminMemberBannedForm";
 import { Badge } from "@/components/ui/badge";
 import {
-  orderStatusBadgeVariant,
+  orderStatusBadgeProps,
   orderStatusLabel,
 } from "@/lib/orders/order-status-display";
 
@@ -299,7 +299,7 @@ export default async function AdminMemberDetailPage({
                   <tr key={o.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
                       <Link
-                        href={`/admin/orders/${o.id}`}
+                        href={`/admin/orders/${o.id}?from=member`}
                         className={cn(
                           buttonVariants({ variant: "ghost", size: "sm" }),
                           "h-auto min-h-0 px-1 py-0 font-mono text-xs text-primary hover:underline",
@@ -312,7 +312,7 @@ export default async function AdminMemberDetailPage({
                       {formatOrderDateTimeZh(o.created_at)}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={orderStatusBadgeVariant(o.status)}>
+                      <Badge {...orderStatusBadgeProps(o.status)}>
                         {orderStatusLabel(o.status)}
                       </Badge>
                     </td>

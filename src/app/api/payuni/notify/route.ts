@@ -11,6 +11,7 @@ import { findOrderByPayuniMerTradeNo } from "@/lib/payuni/find-order-by-mer-trad
 import { parsePayuniPostBody } from "@/lib/payuni/parse-post";
 import { createServiceClient } from "@/lib/supabase/service";
 import { payuniExpireDateRawToUtcBoundaryIso } from "@/lib/payuni/expire-at";
+import { extractPayuniLogisticsPatchFromNotify } from "@/lib/payuni/notify-logistics";
 
 function pickField(d: Record<string, string>, ...names: string[]): string {
   for (const n of names) {
@@ -101,6 +102,7 @@ export async function POST(req: Request) {
 
   const paymentType = extractPayuniPaymentType(decrypted);
   const detailJson = extractPayuniPaymentDetailForStorage(decrypted);
+  const logisticsPatch = extractPayuniLogisticsPatchFromNotify(decrypted);
   const now = new Date().toISOString();
 
   if (order.status === "pending") {
@@ -108,6 +110,7 @@ export async function POST(req: Request) {
       status: "paid",
       updated_at: now,
     };
+    Object.assign(update, logisticsPatch);
     if (paymentType) update.payuni_payment_type = paymentType;
     if (hasPayuniPaymentDetailContent(detailJson)) {
       update.payuni_payment_detail = detailJson;
@@ -130,7 +133,7 @@ export async function POST(req: Request) {
       return new NextResponse("db error", { status: 500 });
     }
   } else if (order.status === "paid") {
-    const patch: Record<string, unknown> = { updated_at: now };
+    const patch: Record<string, unknown> = { updated_at: now, ...logisticsPatch };
     if (paymentType && !order.payuni_payment_type) {
       patch.payuni_payment_type = paymentType;
     }

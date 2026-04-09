@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, ShoppingBag, Settings } from "lucide-react";
+import { LayoutDashboard, Users, ShoppingBag, Settings, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const baseClass =
@@ -22,6 +22,7 @@ const items: {
 }[] = [
   { href: "/admin", label: "儀表板", icon: LayoutDashboard },
   { href: "/admin/members", label: "會員管理", icon: Users },
+  { href: "/admin/orders", label: "訂單管理", icon: ClipboardList },
   { href: "/admin/products", label: "商品管理", icon: ShoppingBag },
   { href: "/admin/settings", label: "系統設定", icon: Settings },
 ];

@@ -87,6 +87,14 @@ export interface FormMenuSelectProps {
   emptyOption?: { label: string };
   /** 選取後向最近的 form 送出（例如 GET 篩選表單） */
   requestSubmitParentForm?: boolean;
+  /** 選值變更時回呼（供非原生 submit 的受控流程使用） */
+  onValueChange?: (value: string) => void;
+  disabled?: boolean;
+  /**
+   * 下拉定位層 class（預設 z-[80]）。置於高 z-index 的 dialog 內時請改為例如 z-[220]，
+   * 否則選單會被遮罩蓋住。
+   */
+  positionerClassName?: string;
 }
 
 /**
@@ -101,6 +109,9 @@ export function FormMenuSelect({
   invalid,
   emptyOption,
   requestSubmitParentForm,
+  onValueChange,
+  disabled,
+  positionerClassName,
 }: FormMenuSelectProps) {
   const fullOptions = useMemo(() => {
     if (!emptyOption) return options;
@@ -119,6 +130,7 @@ export function FormMenuSelect({
 
   function commitValue(next: string) {
     setValue(next);
+    onValueChange?.(next);
     if (requestSubmitParentForm) {
       queueMicrotask(() => {
         rootRef.current?.closest("form")?.requestSubmit();
@@ -129,13 +141,15 @@ export function FormMenuSelect({
   return (
     <div ref={rootRef} className="w-full">
       <input type="hidden" name={name} value={value} required={required} />
-      <MenuPrimitive.Root>
+      <MenuPrimitive.Root disabled={disabled}>
         <MenuPrimitive.Trigger
           type="button"
           id={id}
           aria-invalid={invalid ? true : undefined}
+          disabled={disabled}
           className={cn(
             formMenuTriggerClassName,
+            disabled && "pointer-events-none opacity-60",
             invalid &&
               "border-destructive ring-2 ring-destructive/10 data-[open]:border-destructive data-[open]:ring-destructive/20",
           )}
@@ -145,7 +159,11 @@ export function FormMenuSelect({
         </MenuPrimitive.Trigger>
 
         <MenuPrimitive.Portal>
-          <MenuPrimitive.Positioner className="z-[80] pt-1" side="bottom" align="start">
+          <MenuPrimitive.Positioner
+            className={cn("pt-1", positionerClassName ?? "z-[80]")}
+            side="bottom"
+            align="start"
+          >
             <MenuPrimitive.Popup
               data-ui="form-menu-select-popup"
               className="w-[var(--anchor-width)] min-w-[11rem] overflow-hidden rounded-xl border border-border bg-background p-1 shadow-lg shadow-black/5 animate-in fade-in zoom-in-95 duration-150 origin-top"

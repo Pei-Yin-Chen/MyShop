@@ -167,8 +167,8 @@ export default async function AdminProductsPage({
         <fieldset className="min-w-0 border-0 p-0">
           <legend className="sr-only">篩選商品</legend>
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-4">
-            <div className="min-w-0 w-full lg:max-w-md xl:max-w-lg">
+          <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-end xl:gap-4">
+            <div className="min-w-0 w-full xl:min-w-0 xl:flex-1">
               <label
                 htmlFor="admin-products-q"
                 className="mb-1.5 block text-xs font-medium text-muted-foreground"
@@ -181,13 +181,13 @@ export default async function AdminProductsPage({
                 type="search"
                 placeholder="商品名稱或描述…"
                 defaultValue={q}
-                className="h-9 w-full rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-9 w-full min-w-0 rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 autoComplete="off"
               />
             </div>
 
-            <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:gap-4">
-              <div className="min-w-0 flex-1 basis-0 sm:min-w-[14rem]">
+            <div className="flex min-w-0 w-full flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4 xl:w-auto xl:shrink-0">
+              <div className="min-w-0 flex-1 basis-[14rem] sm:min-w-[14rem]">
                 <label
                   htmlFor="admin-products-category"
                   className="mb-1.5 block text-xs font-medium text-muted-foreground"
@@ -202,7 +202,7 @@ export default async function AdminProductsPage({
                   options={categories.map((c) => ({ value: c.id, label: c.name }))}
                 />
               </div>
-              <div className="min-w-0 flex-1 basis-0 sm:min-w-[14rem]">
+              <div className="min-w-0 flex-1 basis-[14rem] sm:min-w-[14rem]">
                 <label
                   htmlFor="admin-products-status"
                   className="mb-1.5 block text-xs font-medium text-muted-foreground"
@@ -220,20 +220,20 @@ export default async function AdminProductsPage({
                   }))}
                 />
               </div>
-            </div>
 
-            <div className="flex flex-wrap gap-2 lg:shrink-0">
-              <Button type="submit" size="lg" className="rounded-full">
-                搜尋
-              </Button>
-              {q || categoryId || statusFilter ? (
-                <Link
-                  href="/admin/products"
-                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full")}
-                >
-                  清除
-                </Link>
-              ) : null}
+              <div className="flex w-full shrink-0 flex-wrap gap-2 sm:ml-auto sm:w-auto sm:justify-end">
+                <Button type="submit" size="lg" className="rounded-full">
+                  搜尋
+                </Button>
+                {q || categoryId || statusFilter ? (
+                  <Link
+                    href="/admin/products"
+                    className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full")}
+                  >
+                    清除
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </div>
         </fieldset>
@@ -288,11 +288,15 @@ export default async function AdminProductsPage({
                   <td className="px-4 py-3">
                     <span
                       className={cn(
-                        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                        p.status === "active" && "bg-emerald-100 text-emerald-800",
-                        p.status === "sold_out" && "bg-amber-100 text-amber-900",
-                        p.status === "archived" && "bg-slate-100 text-slate-700",
-                        p.status === "draft" && "bg-slate-100 text-slate-600",
+                        "inline-flex rounded-full border px-2 py-0.5 text-xs font-medium",
+                        p.status === "active" &&
+                          "border-emerald-200/80 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100",
+                        p.status === "sold_out" &&
+                          "border-orange-300/85 bg-orange-100 text-orange-950 dark:border-orange-800 dark:bg-orange-950/45 dark:text-orange-100",
+                        p.status === "archived" &&
+                          "border-neutral-200 bg-neutral-100 text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800/80 dark:text-neutral-200",
+                        p.status === "draft" &&
+                          "border-slate-300/90 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-200",
                       )}
                     >
                       {p.status ? STATUS_LABEL[p.status] ?? p.status : "—"}

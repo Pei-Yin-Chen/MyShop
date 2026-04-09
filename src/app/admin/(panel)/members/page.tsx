@@ -157,8 +157,8 @@ export default async function MembersPage({
       <form method="get" className="rounded-xl border border-border/80 bg-muted/25 px-4 py-4 shadow-sm sm:px-5">
         <fieldset className="min-w-0 border-0 p-0">
           <legend className="sr-only">搜尋與篩選會員</legend>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-4">
-            <div className="min-w-0 w-full lg:max-w-md">
+          <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-end xl:gap-4">
+            <div className="min-w-0 w-full xl:min-w-0 xl:flex-1">
               <label htmlFor="admin-members-q" className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 姓名、Email 或會員 ID
               </label>
@@ -168,13 +168,13 @@ export default async function MembersPage({
                 type="search"
                 placeholder="關鍵字或 UUID…"
                 defaultValue={rawQ.trim()}
-                className="h-9 w-full rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-9 w-full min-w-0 rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 autoComplete="off"
               />
             </div>
 
-            <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:gap-4">
-              <div className="min-w-0 flex-1 basis-0 sm:min-w-[12rem]">
+            <div className="flex min-w-0 w-full flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4 xl:w-auto xl:shrink-0">
+              <div className="min-w-0 flex-1 basis-[12rem] sm:min-w-[12rem]">
                 <label htmlFor="admin-members-source" className="mb-1.5 block text-xs font-medium text-muted-foreground">
                   來源
                 </label>
@@ -189,7 +189,7 @@ export default async function MembersPage({
                   }))}
                 />
               </div>
-              <div className="min-w-0 flex-1 basis-0 sm:min-w-[12rem]">
+              <div className="min-w-0 flex-1 basis-[12rem] sm:min-w-[12rem]">
                 <label htmlFor="admin-members-status" className="mb-1.5 block text-xs font-medium text-muted-foreground">
                   帳號狀態
                 </label>
@@ -204,20 +204,20 @@ export default async function MembersPage({
                   }))}
                 />
               </div>
-            </div>
 
-            <div className="flex flex-wrap gap-2 lg:shrink-0">
-              <button type="submit" className={cn(buttonVariants({ size: "lg" }), "rounded-full")}>
-                搜尋
-              </button>
-              {hasActiveFilters ? (
-                <Link
-                  href="/admin/members"
-                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full")}
-                >
-                  清除
-                </Link>
-              ) : null}
+              <div className="flex w-full shrink-0 flex-wrap gap-2 sm:ml-auto sm:w-auto sm:justify-end">
+                <button type="submit" className={cn(buttonVariants({ size: "lg" }), "rounded-full")}>
+                  搜尋
+                </button>
+                {hasActiveFilters ? (
+                  <Link
+                    href="/admin/members"
+                    className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full")}
+                  >
+                    清除
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </div>
         </fieldset>
