@@ -6,6 +6,7 @@ import { ImagePlus, Link2, Loader2, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AdminImagePreviewDialog } from "@/components/admin/AdminImagePreviewDialog";
 
 const labelClass = "mb-1.5 block text-xs font-medium text-muted-foreground";
 
@@ -25,6 +26,10 @@ export function AdminImageUploadField({
   previewImageClassName,
   /** 為 false 時不顯示頂部標題（由外層排版時使用，仍請傳 `label` 供無障礙用） */
   showLabel = true,
+  /** 點擊縮圖以全螢幕預覽（與商品圖相同） */
+  enablePreview = false,
+  /** 預覽對話框的 `alt`（建議與 `label` 一致） */
+  previewAlt,
 }: {
   label: string;
   /** hidden input name */
@@ -40,6 +45,8 @@ export function AdminImageUploadField({
   /** Override preview `<Image>` className (default `object-cover`) */
   previewImageClassName?: string;
   showLabel?: boolean;
+  enablePreview?: boolean;
+  previewAlt?: string;
 }) {
   /** Always defined so inputs stay controlled (avoid undefined → string warning). */
   const safeValue = value ?? "";
@@ -48,6 +55,7 @@ export function AdminImageUploadField({
   const fileId = useMemo(() => `${id}-file`, [id]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   async function uploadFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -107,13 +115,40 @@ export function AdminImageUploadField({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[6rem_1fr] sm:items-start">
           <div className="relative size-24 overflow-hidden rounded-lg border border-border bg-muted">
             {safeValue ? (
-              <Image
-                src={safeValue}
-                alt=""
-                fill
-                className={previewImageClassName ?? "object-cover"}
-                sizes="96px"
-              />
+              enablePreview ? (
+                <>
+                  <button
+                    type="button"
+                    className="relative block size-full cursor-zoom-in outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    title="點擊放大預覽"
+                    aria-label={`放大預覽：${label}`}
+                    disabled={disabled || busy}
+                    onClick={() => setPreviewOpen(true)}
+                  >
+                    <Image
+                      src={safeValue}
+                      alt=""
+                      fill
+                      className={previewImageClassName ?? "object-cover"}
+                      sizes="96px"
+                    />
+                  </button>
+                  <AdminImagePreviewDialog
+                    open={previewOpen}
+                    src={safeValue}
+                    alt={previewAlt ?? label}
+                    onClose={() => setPreviewOpen(false)}
+                  />
+                </>
+              ) : (
+                <Image
+                  src={safeValue}
+                  alt=""
+                  fill
+                  className={previewImageClassName ?? "object-cover"}
+                  sizes="96px"
+                />
+              )
             ) : (
               <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
                 —

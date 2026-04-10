@@ -7,6 +7,7 @@ import {
   GalleryVerticalEnd,
   HeartHandshake,
   Image as ImageIcon,
+  FileText,
   Sparkles,
   Type,
 } from "lucide-react";
@@ -20,6 +21,7 @@ import {
 } from "@/lib/supabase/fetch-home-page";
 import { normalizeSiteSettings } from "@/lib/site-settings";
 import type { ReactNode } from "react";
+import { fetchCustomerServicePagesForAdmin } from "@/lib/supabase/fetch-customer-service";
 
 function SettingsLinkCard({
   href,
@@ -62,17 +64,20 @@ function SettingsLinkCard({
 
 export default async function AdminSettingsPage() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("home_page_sections")
-    .select("section_key, content")
-    .in("section_key", [
-      "site_settings",
-      "hero",
-      "featured_intro",
-      "product_gallery",
-      "brand_philosophy",
-      "shopping_rules",
-    ]);
+  const [{ data }, customerServicePages] = await Promise.all([
+    supabase
+      .from("home_page_sections")
+      .select("section_key, content")
+      .in("section_key", [
+        "site_settings",
+        "hero",
+        "featured_intro",
+        "product_gallery",
+        "brand_philosophy",
+        "shopping_rules",
+      ]),
+    fetchCustomerServicePagesForAdmin(),
+  ]);
   const byKey = new Map<string, unknown>();
   for (const row of data ?? []) {
     byKey.set(row.section_key as string, row.content);
@@ -92,54 +97,83 @@ export default async function AdminSettingsPage() {
         <p className="mt-1 text-sm text-muted-foreground">管理全站識別與首頁各區塊內容。</p>
       </div>
 
-      <ul className="grid gap-4 sm:grid-cols-1 lg:max-w-xl">
-        <SettingsLinkCard href="/admin/settings/site" icon={Type} title="網站標題與 Logo">
-          <>
-            標題：{site.siteTitle}
-            <span className="mt-1 block text-xs">
-              Logo：{site.siteLogoUrl ? "已上傳圖片" : "顯示文字標題"}
-            </span>
-            <span className="mt-1 block text-xs line-clamp-2">
-              Footer：{site.footerTagline}
-            </span>
-          </>
-        </SettingsLinkCard>
+      <div className="space-y-8 lg:max-w-xl">
+        <section aria-labelledby="settings-site-wide-heading">
+          <h3
+            id="settings-site-wide-heading"
+            className="mb-3 text-sm font-semibold tracking-tight text-muted-foreground"
+          >
+            全站
+          </h3>
+          <ul className="grid gap-4 sm:grid-cols-1">
+            <SettingsLinkCard href="/admin/settings/site" icon={Type} title="網站標題與 Logo">
+              <>
+                標題：{site.siteTitle}
+                <span className="mt-1 block text-xs">
+                  Logo：{site.siteLogoUrl ? "已上傳圖片" : "顯示文字標題"}
+                </span>
+                <span className="mt-1 block text-xs line-clamp-2">
+                  Footer：{site.footerTagline}
+                </span>
+              </>
+            </SettingsLinkCard>
 
-        <SettingsLinkCard href="/admin/settings/home-hero" icon={ImageIcon} title="首頁 Banner（主視覺）">
-          <>
-            目前主標：{hero.titleLine1}
-            {hero.titleLine2Accent ? ` ${hero.titleLine2Accent}` : ""}
-          </>
-        </SettingsLinkCard>
+            <SettingsLinkCard href="/admin/settings/site-pages" icon={FileText} title="網站說明">
+              <>
+                可設定頁尾快速連結、客戶服務區塊與說明頁內容。
+                <span className="mt-1 block text-xs">
+                  目前已建立 {customerServicePages.length} 則說明頁
+                </span>
+              </>
+            </SettingsLinkCard>
+          </ul>
+        </section>
 
-        <SettingsLinkCard
-          href="/admin/settings/home-featured"
-          icon={Sparkles}
-          title="首頁 商品推薦區"
-        >
-          目前標題：{featured.title}
-        </SettingsLinkCard>
+        <section aria-labelledby="settings-home-heading">
+          <h3
+            id="settings-home-heading"
+            className="mb-3 text-sm font-semibold tracking-tight text-muted-foreground"
+          >
+            首頁
+          </h3>
+          <ul className="grid gap-4 sm:grid-cols-1">
+            <SettingsLinkCard href="/admin/settings/home-hero" icon={ImageIcon} title="Banner（主視覺）">
+              <>
+                目前主標：{hero.titleLine1}
+                {hero.titleLine2Accent ? ` ${hero.titleLine2Accent}` : ""}
+              </>
+            </SettingsLinkCard>
 
-        <SettingsLinkCard
-          href="/admin/settings/home-gallery"
-          icon={GalleryVerticalEnd}
-          title="首頁 圖片展示區"
-        >
-          {gallery.enabled === false ? "目前狀態：不顯示" : `目前標題：${gallery.title}`}
-        </SettingsLinkCard>
+            <SettingsLinkCard
+              href="/admin/settings/home-featured"
+              icon={Sparkles}
+              title="商品推薦區"
+            >
+              目前標題：{featured.title}
+            </SettingsLinkCard>
 
-        <SettingsLinkCard
-          href="/admin/settings/home-philosophy"
-          icon={HeartHandshake}
-          title="首頁 介紹卡片區"
-        >
-          {philosophy.enabled === false ? "目前狀態：不顯示" : `目前標題：${philosophy.title}`}
-        </SettingsLinkCard>
+            <SettingsLinkCard
+              href="/admin/settings/home-gallery"
+              icon={GalleryVerticalEnd}
+              title="圖片展示區"
+            >
+              {gallery.enabled === false ? "目前狀態：不顯示" : `目前標題：${gallery.title}`}
+            </SettingsLinkCard>
 
-        <SettingsLinkCard href="/admin/settings/home-rules" icon={ClipboardList} title="首頁 說明列表區">
-          {rules.enabled === false ? "目前狀態：不顯示" : `目前標題：${rules.title}`}
-        </SettingsLinkCard>
-      </ul>
+            <SettingsLinkCard
+              href="/admin/settings/home-philosophy"
+              icon={HeartHandshake}
+              title="介紹卡片區"
+            >
+              {philosophy.enabled === false ? "目前狀態：不顯示" : `目前標題：${philosophy.title}`}
+            </SettingsLinkCard>
+
+            <SettingsLinkCard href="/admin/settings/home-rules" icon={ClipboardList} title="說明列表區">
+              {rules.enabled === false ? "目前狀態：不顯示" : `目前標題：${rules.title}`}
+            </SettingsLinkCard>
+          </ul>
+        </section>
+      </div>
     </div>
   );
 }

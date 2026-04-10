@@ -14,6 +14,7 @@ import { signOut } from "@/app/auth/actions";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { DEFAULT_SITE_SETTINGS, normalizeSiteSettings } from "@/lib/site-settings";
 import { SiteLogo } from "@/components/SiteLogo";
+import { NavCategoryMenu } from "@/components/NavCategoryMenu";
 
 function displayNameForUser(
   user: SupabaseUser,
@@ -30,9 +31,12 @@ function displayNameForUser(
 export function Navbar({
   initialSiteTitle,
   initialSiteLogoUrl,
+  navProductCategories = [],
 }: {
   initialSiteTitle?: string;
   initialSiteLogoUrl?: string;
+  /** 來自 `product_categories`，供「商品分類」選單與手機選單 */
+  navProductCategories?: string[];
 }) {
   const pathname = usePathname();
   const { totalItems } = useCart();
@@ -173,15 +177,7 @@ export function Navbar({
             <Link href="/products" className="transition-colors hover:text-foreground">
               所有商品
             </Link>
-            <Link href="/products?category=蛋糕" className="transition-colors hover:text-foreground">
-              蛋糕
-            </Link>
-            <Link href="/products?category=麵包" className="transition-colors hover:text-foreground">
-              麵包
-            </Link>
-            <Link href="/products?category=甜點" className="transition-colors hover:text-foreground">
-              甜點
-            </Link>
+            <NavCategoryMenu categories={navProductCategories} />
             <Link href="/about" className="transition-colors hover:text-foreground">
               關於我們
             </Link>
@@ -315,24 +311,15 @@ export function Navbar({
                 <Link href="/products" className="transition-colors hover:text-foreground text-muted-foreground">
                   所有商品
                 </Link>
-                <Link
-                  href="/products?category=蛋糕"
-                  className="transition-colors hover:text-foreground text-muted-foreground"
-                >
-                  蛋糕
-                </Link>
-                <Link
-                  href="/products?category=麵包"
-                  className="transition-colors hover:text-foreground text-muted-foreground"
-                >
-                  麵包
-                </Link>
-                <Link
-                  href="/products?category=甜點"
-                  className="transition-colors hover:text-foreground text-muted-foreground"
-                >
-                  甜點
-                </Link>
+                {navProductCategories.map((name) => (
+                  <Link
+                    key={name}
+                    href={`/products?category=${encodeURIComponent(name)}`}
+                    className="transition-colors hover:text-foreground text-muted-foreground"
+                  >
+                    {name}
+                  </Link>
+                ))}
                 <Link href="/about" className="transition-colors hover:text-foreground text-muted-foreground">
                   關於我們
                 </Link>

@@ -32,6 +32,10 @@ export const ADMIN_MEMBER_ACCOUNT_STATUS_FILTER_VALUES = [
 export type AdminMemberAccountStatusFilter =
   (typeof ADMIN_MEMBER_ACCOUNT_STATUS_FILTER_VALUES)[number];
 
+/** 後台角色篩選（URL `role`） */
+export const ADMIN_MEMBER_ROLE_FILTER_VALUES = ["admin", "member"] as const;
+export type AdminMemberRoleFilter = (typeof ADMIN_MEMBER_ROLE_FILTER_VALUES)[number];
+
 const UUID_FULL =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -62,6 +66,7 @@ export function buildAdminMembersListHref(params: {
   page?: number;
   source?: string;
   status?: string;
+  role?: string;
 }): string {
   const sp = new URLSearchParams();
   if (params.q?.trim()) sp.set("q", params.q.trim());
@@ -75,6 +80,12 @@ export function buildAdminMembersListHref(params: {
     )
   ) {
     sp.set("status", params.status);
+  }
+  if (
+    params.role &&
+    ADMIN_MEMBER_ROLE_FILTER_VALUES.includes(params.role as AdminMemberRoleFilter)
+  ) {
+    sp.set("role", params.role);
   }
   if (params.page && params.page > 1) sp.set("page", String(params.page));
   const qs = sp.toString();

@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { DEMO_BLOG_POSTS, getDemoPostBySlug } from "@/data/blog-demos";
+import { BLOG_FEATURE_ENABLED } from "@/lib/site-features";
 import { ArrowLeft } from "lucide-react";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export function generateStaticParams() {
+  if (!BLOG_FEATURE_ENABLED) return [];
   return DEMO_BLOG_POSTS.map((p) => ({ slug: p.slug }));
 }
 
@@ -29,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = getDemoPostBySlug(slug);
   if (!post) return { title: "文章不存在" };
   return {
-    title: `${post.title} · 烘焙誌`,
+    title: `${post.title} · 部落格`,
     description: post.excerpt,
   };
 }
@@ -52,7 +54,7 @@ export default async function BlogPostPage({ params }: Props) {
               render={<Link href="/blog" />}
             >
               <ArrowLeft className="mr-2 h-4 w-4" aria-hidden />
-              返回烘焙誌
+              返回部落格
             </Button>
 
             <header className="border-b border-border/60 pb-8">

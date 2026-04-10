@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState, startTransition, type FormEvent } from "react";
+import { AdminFormFooterActions } from "@/components/admin/AdminFormFooterActions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { BrandPhilosophySectionContent } from "@/data/home-page-defaults";
@@ -314,11 +315,11 @@ export function AdminHomePhilosophyForm({ initial }: { initial: BrandPhilosophyS
 
       {showServerError ? <p className="text-sm text-destructive">{serverError}</p> : null}
 
-      <div className="flex justify-end border-t border-border/60 pt-4">
-        <Button type="submit" disabled={pending} size="lg" className="min-w-[9rem] rounded-full">
+      <AdminFormFooterActions backHref="/admin/settings">
+        <Button type="submit" disabled={pending} size="lg" className="min-h-9 min-w-[9rem] rounded-full">
           {pending ? "儲存中…" : "儲存設定"}
         </Button>
-      </div>
+      </AdminFormFooterActions>
     </form>
   );
 }

@@ -272,3 +272,59 @@ export async function setMemberBannedAction(
   revalidatePath(`/admin/members/${memberId}`);
   return { ok: true, message: banned ? "已標記為停用" : "已解除停用" };
 }
+
+/**
+ * 設定會員是否為後台管理員（`profiles.is_admin`）。
+ * 取消時須至少保留一位管理員（含不可在僅剩一人時取消自己或他人）。
+ */
+export async function setMemberAdminRoleAction(
+  _prev: MemberActionState | undefined,
+  formData: FormData,
+): Promise<MemberActionState> {
+  const { supabase, error: authError } = await requireAdminSupabase();
+  if (!supabase || authError) return { ok: false, error: authError ?? "未授權" };
+
+  const memberId = String(formData.get("member_id") ?? "").trim();
+  const raw = String(formData.get("is_admin") ?? "").trim();
+  const wantAdmin = raw === "true" || raw === "on";
+
+  if (!memberId) return { ok: false, error: "缺少會員 ID" };
+
+  const { count: adminCount, error: countErr } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("is_admin", true);
+  if (countErr) return { ok: false, error: countErr.message };
+
+  const { data: targetProfile, error: targetErr } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", memberId)
+    .maybeSingle();
+  if (targetErr || !targetProfile) return { ok: false, error: "找不到此會員" };
+
+  const wasAdmin = targetProfile.is_admin === true;
+
+  if (!wantAdmin && wasAdmin && (adminCount ?? 0) <= 1) {
+    return { ok: false, error: "無法取消：系統至少需要保留一位管理員" };
+  }
+
+  if (wantAdmin === wasAdmin) {
+    return { ok: true, message: wantAdmin ? "此帳號已是管理員" : "此帳號目前非管理員" };
+  }
+
+  const { error: updErr } = await supabase
+    .from("profiles")
+    .update({
+      is_admin: wantAdmin,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", memberId);
+
+  if (updErr) return { ok: false, error: updErr.message };
+
+  revalidatePath("/admin/members");
+  revalidatePath(`/admin/members/${memberId}`);
+  revalidatePath("/admin");
+  return { ok: true, message: wantAdmin ? "已設為管理員" : "已取消管理員權限" };
+}

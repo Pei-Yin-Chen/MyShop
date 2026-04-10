@@ -20,6 +20,7 @@ import {
   type AdminMemberNoteRow,
 } from "@/components/admin/AdminMemberNotesForm";
 import { AdminMemberBannedForm } from "@/components/admin/AdminMemberBannedForm";
+import { AdminMemberAdminRoleForm } from "@/components/admin/AdminMemberAdminRoleForm";
 import { Badge } from "@/components/ui/badge";
 import {
   orderStatusBadgeProps,
@@ -146,16 +147,18 @@ export default async function AdminMemberDetailPage({
     authorLabel: adminNoteAuthorLabel(n.created_by, authorMap),
   }));
 
-  const [{ count: ordersTotalCount }, { data: orderMetaForStatus }] = await Promise.all([
-    supabase
-      .from("orders")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", id),
-    supabase
-      .from("orders")
-      .select("status, created_at, updated_at")
-      .eq("user_id", id),
-  ]);
+  const [{ count: ordersTotalCount }, { data: orderMetaForStatus }, { count: adminRoleCount }] =
+    await Promise.all([
+      supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", id),
+      supabase
+        .from("orders")
+        .select("status, created_at, updated_at")
+        .eq("user_id", id),
+      supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_admin", true),
+    ]);
 
   const orderRowsForStatus = (orderMetaForStatus ?? []).map((o) => ({
     status: o.status,
@@ -252,6 +255,20 @@ export default async function AdminMemberDetailPage({
                 <dt className="text-muted-foreground">註冊時間</dt>
                 <dd className="tabular-nums text-foreground">{formatOrderDateTimeZh(profile.created_at)}</dd>
               </dl>
+
+              <div className="mt-5 border-t border-border pt-5">
+                <p className="mb-1.5 block text-xs font-medium text-muted-foreground">管理員權限</p>
+                <p className="text-sm text-muted-foreground">
+                  設為管理員後，該帳號可從「後台登入」進入管理介面。此處僅變更權限，不會刪除帳號。任何管理員皆可取消他人權限；若目前只有一位管理員，須先新增第二位後才能取消。
+                </p>
+                <div className="mt-3">
+                  <AdminMemberAdminRoleForm
+                    memberId={profile.id}
+                    isAdmin={profile.is_admin === true}
+                    adminCount={adminRoleCount ?? 0}
+                  />
+                </div>
+              </div>
 
               <div className="mt-5 border-t border-border pt-5">
                 <p className="text-sm font-medium text-foreground">帳號停用</p>

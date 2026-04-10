@@ -7,6 +7,7 @@ import { AdminMemberImportForm } from "@/components/admin/AdminMemberImportForm"
 import { cn } from "@/lib/utils";
 import {
   ADMIN_MEMBER_ACCOUNT_STATUS_FILTER_VALUES,
+  ADMIN_MEMBER_ROLE_FILTER_VALUES,
   ADMIN_MEMBER_SOURCE_FILTER_VALUES,
   ADMIN_MEMBERS_PAGE_SIZE,
   buildAdminMembersListHref,
@@ -27,6 +28,7 @@ type ProfileRow = {
   updated_at: string | null;
   member_source: string | null;
   is_banned: boolean | null;
+  is_admin: boolean | null;
   admin_account_status: string;
 };
 
@@ -68,7 +70,7 @@ const SHOW_ADMIN_IMPORT_MEMBER_FROM_ORDER = false;
 export default async function MembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string; source?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; source?: string; status?: string; role?: string }>;
 }) {
   const sp = await searchParams;
   const rawQ = typeof sp.q === "string" ? sp.q : "";
@@ -90,7 +92,13 @@ export default async function MembersPage({
       ? rawStatus
       : "";
 
-  const hasActiveFilters = q.length > 0 || !!sourceFilter || !!statusFilter;
+  const rawRole = typeof sp.role === "string" ? sp.role.trim() : "";
+  const roleFilter =
+    rawRole && (ADMIN_MEMBER_ROLE_FILTER_VALUES as readonly string[]).includes(rawRole)
+      ? rawRole
+      : "";
+
+  const hasActiveFilters = q.length > 0 || !!sourceFilter || !!statusFilter || !!roleFilter;
 
   const supabase = await createClient();
 
@@ -104,6 +112,11 @@ export default async function MembersPage({
   if (statusFilter) {
     countQuery = countQuery.eq("admin_account_status", statusFilter);
   }
+  if (roleFilter === "admin") {
+    countQuery = countQuery.eq("is_admin", true);
+  } else if (roleFilter === "member") {
+    countQuery = countQuery.eq("is_admin", false);
+  }
   const { count: totalCount, error: countError } = await countQuery;
 
   const total = totalCount ?? 0;
@@ -116,7 +129,7 @@ export default async function MembersPage({
   let listQuery = supabase
     .from("profiles_admin_list")
     .select(
-      "id, full_name, email, created_at, updated_at, member_source, is_banned, admin_account_status",
+      "id, full_name, email, created_at, updated_at, member_source, is_banned, is_admin, admin_account_status",
     )
     .order("created_at", { ascending: false })
     .range(from, to);
@@ -129,6 +142,11 @@ export default async function MembersPage({
   }
   if (statusFilter) {
     listQuery = listQuery.eq("admin_account_status", statusFilter);
+  }
+  if (roleFilter === "admin") {
+    listQuery = listQuery.eq("is_admin", true);
+  } else if (roleFilter === "member") {
+    listQuery = listQuery.eq("is_admin", false);
   }
 
   const { data: membersRaw, error: loadError } = await listQuery;
@@ -174,8 +192,11 @@ export default async function MembersPage({
             </div>
 
             <div className="flex min-w-0 w-full flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4 xl:w-auto xl:shrink-0">
-              <div className="min-w-0 flex-1 basis-[12rem] sm:min-w-[12rem]">
-                <label htmlFor="admin-members-source" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              <div className="flex min-w-0 flex-1 basis-[12rem] flex-col items-center sm:min-w-[12rem] lg:items-stretch">
+                <label
+                  htmlFor="admin-members-source"
+                  className="mb-1.5 block w-full text-center text-xs font-medium text-muted-foreground lg:text-left"
+                >
                   來源
                 </label>
                 <FormMenuSelect
@@ -189,8 +210,11 @@ export default async function MembersPage({
                   }))}
                 />
               </div>
-              <div className="min-w-0 flex-1 basis-[12rem] sm:min-w-[12rem]">
-                <label htmlFor="admin-members-status" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              <div className="flex min-w-0 flex-1 basis-[12rem] flex-col items-center sm:min-w-[12rem] lg:items-stretch">
+                <label
+                  htmlFor="admin-members-status"
+                  className="mb-1.5 block w-full text-center text-xs font-medium text-muted-foreground lg:text-left"
+                >
                   帳號狀態
                 </label>
                 <FormMenuSelect
@@ -202,6 +226,24 @@ export default async function MembersPage({
                     value,
                     label: MEMBER_ACCOUNT_STATUS_LABEL[value],
                   }))}
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 basis-[12rem] flex-col items-center sm:min-w-[12rem] lg:items-stretch">
+                <label
+                  htmlFor="admin-members-role"
+                  className="mb-1.5 block w-full text-center text-xs font-medium text-muted-foreground lg:text-left"
+                >
+                  後台角色
+                </label>
+                <FormMenuSelect
+                  id="admin-members-role"
+                  name="role"
+                  defaultValue={roleFilter}
+                  emptyOption={{ label: "全部" }}
+                  options={[
+                    { value: "admin", label: "僅管理員" },
+                    { value: "member", label: "僅一般會員" },
+                  ]}
                 />
               </div>
 
@@ -230,8 +272,9 @@ export default async function MembersPage({
               <tr>
                 <th className="px-4 py-3">姓名</th>
                 <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">來源</th>
-                <th className="px-4 py-3">帳號狀態</th>
+                <th className="px-4 py-3 text-center">來源</th>
+                <th className="px-4 py-3 text-center">帳號狀態</th>
+                <th className="px-4 py-3 text-center">後台角色</th>
                 <th className="px-4 py-3">註冊時間</th>
                 <th className="px-4 py-3 text-right">操作</th>
               </tr>
@@ -249,10 +292,10 @@ export default async function MembersPage({
                     <td className="px-4 py-3 text-muted-foreground break-all max-w-[220px]">
                       {member.email?.trim() || "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-center">
                       <span
                         className={cn(
-                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+                          "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-center text-xs font-medium",
                           member.member_source === "purchase"
                             ? "bg-violet-100 text-violet-900 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-100"
                             : "bg-muted text-muted-foreground border border-border",
@@ -261,15 +304,26 @@ export default async function MembersPage({
                         {sourceLabel}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-center">
                       <span
                         className={cn(
-                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+                          "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-center text-xs font-medium",
                           statusBadgeClass(accountStatus),
                         )}
                       >
                         {MEMBER_ACCOUNT_STATUS_LABEL[accountStatus]}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {member.is_admin === true ? (
+                        <span className="inline-flex items-center justify-center rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-center text-xs font-medium text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                          管理員
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center justify-center rounded-full border border-border bg-muted px-2 py-0.5 text-center text-xs text-muted-foreground">
+                          一般會員
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-muted-foreground tabular-nums text-xs">
                       {formatOrderDateTimeZh(member.created_at)}
@@ -290,7 +344,7 @@ export default async function MembersPage({
               })}
               {(!members || members.length === 0) && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                     {loadError || countError
                       ? `載入失敗：${(loadError ?? countError)?.message ?? ""}`
                       : hasActiveFilters
@@ -324,6 +378,7 @@ export default async function MembersPage({
                     page: page - 1,
                     source: sourceFilter || undefined,
                     status: statusFilter || undefined,
+                    role: roleFilter || undefined,
                   })}
                   className={cn(
                     buttonVariants({ variant: "outline", size: "sm" }),
@@ -340,6 +395,7 @@ export default async function MembersPage({
                     page: page + 1,
                     source: sourceFilter || undefined,
                     status: statusFilter || undefined,
+                    role: roleFilter || undefined,
                   })}
                   className={cn(
                     buttonVariants({ variant: "outline", size: "sm" }),

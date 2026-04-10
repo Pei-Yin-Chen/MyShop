@@ -232,3 +232,22 @@ export async function fetchAllProductIds(): Promise<string[]> {
 
   return (data ?? []).map((r) => r.id as string);
 }
+
+/** 導覽列「商品分類」選單用（依後台分類排序） */
+export async function fetchProductCategoryNamesForNav(): Promise<string[]> {
+  const supabase = createPublicSupabaseClient();
+  const { data, error } = await supabase
+    .from("product_categories")
+    .select("name")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("[fetchProductCategoryNamesForNav]", error.message);
+    return [];
+  }
+
+  return (data ?? [])
+    .map((r) => (typeof r.name === "string" ? r.name.trim() : ""))
+    .filter((n) => n.length > 0);
+}

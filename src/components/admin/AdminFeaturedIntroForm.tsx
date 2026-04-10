@@ -5,6 +5,7 @@ import {
   updateFeaturedIntroAction,
   type FeaturedIntroFormState,
 } from "@/app/admin/(panel)/settings/actions";
+import { AdminFormFooterActions } from "@/components/admin/AdminFormFooterActions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { FeaturedIntroContent } from "@/data/home-page-defaults";
@@ -139,11 +140,11 @@ export function AdminFeaturedIntroForm({ initial }: { initial: FeaturedIntroCont
         <p className="text-sm text-destructive">{serverError}</p>
       )}
 
-      <div className="flex justify-end border-t border-border/60 pt-4">
-        <Button type="submit" disabled={isPending} size="lg" className="min-w-[9rem] rounded-full">
+      <AdminFormFooterActions backHref="/admin/settings">
+        <Button type="submit" disabled={isPending} size="lg" className="min-h-9 min-w-[9rem] rounded-full">
           {isPending ? "儲存中…" : "儲存設定"}
         </Button>
-      </div>
+      </AdminFormFooterActions>
     </form>
   );
 }

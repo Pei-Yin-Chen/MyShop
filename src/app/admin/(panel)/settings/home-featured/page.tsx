@@ -20,7 +20,7 @@ export default async function AdminHomeFeaturedSettingsPage() {
         <div className="flex items-center gap-3">
           <AdminBackToListLink href="/admin/settings" ariaLabel="返回系統設定" title="返回設定列表" />
           <div>
-            <h2 className="text-2xl font-bold text-foreground">首頁 商品推薦區</h2>
+            <h2 className="text-2xl font-bold text-foreground">商品推薦區</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
               編輯此區塊標題與副標，儲存後套用於首頁。精選商品請至{" "}
               <Link href="/admin/products" className="font-medium text-primary underline-offset-4 hover:underline">

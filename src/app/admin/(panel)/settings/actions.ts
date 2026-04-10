@@ -218,14 +218,20 @@ export async function updateGalleryAction(
   if (!subtitle) fieldErrors.subtitle = "請填寫副標";
 
   const items: ProductGallerySectionContent["items"] = [];
+  let nextOrder = 0;
   for (let i = 0; i < 6; i += 1) {
-    const imageUrl = String(formData.get(`item${i}ImageUrl`) ?? "");
+    const imageUrl = String(formData.get(`item${i}ImageUrl`) ?? "").trim();
     const sortOrderRaw = String(formData.get(`item${i}SortOrder`) ?? "");
     const sortOrder = Number(sortOrderRaw);
-    const urlErr = validateImageUrl(imageUrl);
-    if (urlErr) fieldErrors[`item${i}ImageUrl`] = urlErr;
+    if (imageUrl) {
+      const urlErr = validateImageUrl(imageUrl);
+      if (urlErr) fieldErrors[`item${i}ImageUrl`] = urlErr;
+    }
     if (!Number.isFinite(sortOrder)) fieldErrors[`item${i}SortOrder`] = "排序需為數字";
-    items.push({ imageUrl: imageUrl.trim(), alt: "", sortOrder: Number.isFinite(sortOrder) ? sortOrder : i });
+    if (imageUrl) {
+      items.push({ imageUrl, alt: "", sortOrder: nextOrder });
+      nextOrder += 1;
+    }
   }
 
   if (Object.keys(fieldErrors).length > 0) return { ok: false, error: "請修正表單欄位", fieldErrors };
@@ -234,7 +240,7 @@ export async function updateGalleryAction(
     enabled,
     title,
     subtitle,
-    items: [...items].sort((a, b) => a.sortOrder - b.sortOrder),
+    items,
   };
 
   const { error } = await supabase.from("home_page_sections").upsert(

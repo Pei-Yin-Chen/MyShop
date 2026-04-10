@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -13,9 +14,38 @@ import {
 } from "lucide-react";
 import { SiteLogo } from "@/components/SiteLogo";
 import type { SiteSettings } from "@/lib/site-settings";
+import type { CustomerServiceFooterLink } from "@/lib/customer-service";
+import type { FooterQuickLinksContent } from "@/lib/footer-quick-links";
 import { cn } from "@/lib/utils";
 
-export function FooterInner({ site }: { site: SiteSettings }) {
+const footerLinkClass =
+  "transition-colors hover:text-[var(--footer-heading)] break-words";
+
+function FooterServiceLink({ href, children }: { href: string; children: ReactNode }) {
+  const external = /^https?:\/\//i.test(href.trim());
+  if (external) {
+    return (
+      <a href={href.trim()} target="_blank" rel="noopener noreferrer" className={footerLinkClass}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={href.trim() || "/"} className={footerLinkClass}>
+      {children}
+    </Link>
+  );
+}
+
+export function FooterInner({
+  site,
+  customerServiceLinks,
+  footerQuickLinks,
+}: {
+  site: SiteSettings;
+  customerServiceLinks: CustomerServiceFooterLink[];
+  footerQuickLinks: FooterQuickLinksContent;
+}) {
   const logoSrc = site.footerLogoUrl || site.siteLogoUrl;
   const year = new Date().getFullYear();
   const showContact = Boolean(
@@ -97,24 +127,9 @@ export function FooterInner({ site }: { site: SiteSettings }) {
                 </Link>
               </li>
               <li>
-                <Link href="/cakes" className="transition-colors hover:text-[var(--footer-heading)]">
-                  蛋糕
-                </Link>
-              </li>
-              <li>
-                <Link href="/bread" className="transition-colors hover:text-[var(--footer-heading)]">
-                  麵包
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="transition-colors hover:text-[var(--footer-heading)]">
-                  關於我們
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="transition-colors hover:text-[var(--footer-heading)]">
-                  烘焙誌
-                </Link>
+                <FooterServiceLink href={footerQuickLinks.aboutHref}>
+                  {footerQuickLinks.aboutLabel}
+                </FooterServiceLink>
               </li>
             </ul>
           </div>
@@ -124,31 +139,11 @@ export function FooterInner({ site }: { site: SiteSettings }) {
               客戶服務
             </h3>
             <ul className="space-y-3 text-sm text-[var(--footer-muted)]">
-              <li>
-                <Link href="/faq" className="transition-colors hover:text-[var(--footer-heading)]">
-                  常見問題
-                </Link>
-              </li>
-              <li>
-                <Link href="/shipping" className="transition-colors hover:text-[var(--footer-heading)]">
-                  運送與取貨
-                </Link>
-              </li>
-              <li>
-                <Link href="/returns" className="transition-colors hover:text-[var(--footer-heading)]">
-                  取消與變更
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="transition-colors hover:text-[var(--footer-heading)]">
-                  隱私權政策
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="transition-colors hover:text-[var(--footer-heading)]">
-                  服務條款
-                </Link>
-              </li>
+              {customerServiceLinks.map((item) => (
+                <li key={`${item.label}-${item.href}`}>
+                  <FooterServiceLink href={item.href}>{item.label}</FooterServiceLink>
+                </li>
+              ))}
             </ul>
           </div>
 

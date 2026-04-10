@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEMO_BLOG_POSTS } from "@/data/blog-demos";
 
 export const metadata: Metadata = {
-  title: "烘焙誌 · My Pâtisserie",
-  description: "季節甜點、烘焙技巧與品牌故事（示範文章）。",
+  title: "部落格 · My Pâtisserie",
+  description: "最新消息、品牌故事與活動文章（示範內容）。",
 };
 
 function formatDate(iso: string) {
@@ -32,7 +32,7 @@ export default function BlogPage() {
         <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              烘焙誌
+              部落格
             </h1>
             <p className="mt-3 text-muted-foreground">
               示範文章列表，正式上線後可改接 CMS 或資料庫。

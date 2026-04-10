@@ -67,14 +67,19 @@ export default async function MemberOrdersPage() {
                   <th className="px-4 py-3">訂單日期</th>
                   <th className="px-4 py-3">狀態</th>
                   <th className="px-4 py-3 text-right">金額</th>
-                  <th className="px-4 py-3 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
                 {orders.map((o) => (
                   <tr key={o.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3 font-medium text-foreground">
-                      #{o.order_number}
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/member/orders/${o.id}`}
+                        className="font-medium text-primary underline-offset-2 hover:underline"
+                        aria-label={`訂單 ${o.order_number} 詳情`}
+                      >
+                        #{o.order_number}
+                      </Link>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {formatOrderDateTimeZh(o.created_at)}
@@ -86,14 +91,6 @@ export default async function MemberOrdersPage() {
                     </td>
                     <td className="px-4 py-3 text-right font-medium tabular-nums">
                       NT$ {o.total}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/member/orders/${o.id}`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        查看詳情
-                      </Link>
                     </td>
                   </tr>
                 ))}
