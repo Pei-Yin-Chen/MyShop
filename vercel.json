@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/sync-payuni-delivered",
-      "schedule": "20 */6 * * *"
+      "schedule": "20 9 * * *"
     }
   ]
 }
