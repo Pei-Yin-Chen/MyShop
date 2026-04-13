@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AdminBackToListLink } from "@/components/admin/AdminBackToListLink";
 import { AdminCustomerServicePageForm } from "@/components/admin/AdminCustomerServicePageForm";
+import { AdminDeleteSitePageButton } from "@/components/admin/AdminDeleteSitePageButton";
 import { customerServicePagePublicPath } from "@/lib/customer-service";
 
 const UUID_RE =
@@ -28,7 +29,7 @@ export default async function AdminSitePageEditPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
           <AdminBackToListLink
             href="/admin/settings/site-pages"
@@ -42,6 +43,7 @@ export default async function AdminSitePageEditPage({
             </p>
           </div>
         </div>
+        <AdminDeleteSitePageButton slug={row.slug} pageTitle={row.title} />
       </div>
       <AdminCustomerServicePageForm
         mode="edit"

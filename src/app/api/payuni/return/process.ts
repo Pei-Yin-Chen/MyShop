@@ -14,6 +14,7 @@ import {
   isPendingOfflinePaymentInstruction,
 } from "@/lib/payuni/payment-detail";
 import { findOrderByPayuniMerTradeNo } from "@/lib/payuni/find-order-by-mer-trade-no";
+import { trySendPaymentSuccessNotificationEmailsOnce } from "@/lib/email/order-notifications";
 import { createServiceClient } from "@/lib/supabase/service";
 import { payuniExpireDateRawToUtcBoundaryIso } from "@/lib/payuni/expire-at";
 
@@ -159,6 +160,8 @@ export async function processPayuniReturn(
           pay: "db",
         });
       }
+
+      await trySendPaymentSuccessNotificationEmailsOnce(supabase, order.id);
     } else if (order.status === "paid") {
       if (
         (paymentType && !order.payuni_payment_type) ||

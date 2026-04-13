@@ -22,10 +22,20 @@ export function orderLogisticsStatusLabel(input: {
     }
     return "—";
   }
+  /** 宅配 */
   if (input.orderStatus === "cancelled") {
     return "—";
   }
-  if (input.shippedAt) {
+  if (input.orderStatus === "pending") {
+    return "待付款";
+  }
+  if (input.orderStatus === "paid" || input.orderStatus === "processing") {
+    return "待備貨";
+  }
+  if (input.orderStatus === "completed") {
+    return "已送達";
+  }
+  if (input.shippedAt && input.orderStatus === "shipped") {
     return "配送中";
   }
   return "尚未出貨";

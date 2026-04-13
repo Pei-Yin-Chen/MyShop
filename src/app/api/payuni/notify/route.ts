@@ -9,6 +9,7 @@ import {
 } from "@/lib/payuni/payment-detail";
 import { findOrderByPayuniMerTradeNo } from "@/lib/payuni/find-order-by-mer-trade-no";
 import { parsePayuniPostBody } from "@/lib/payuni/parse-post";
+import { trySendPaymentSuccessNotificationEmailsOnce } from "@/lib/email/order-notifications";
 import { createServiceClient } from "@/lib/supabase/service";
 import { payuniExpireDateRawToUtcBoundaryIso } from "@/lib/payuni/expire-at";
 import { extractPayuniLogisticsPatchFromNotify } from "@/lib/payuni/notify-logistics";
@@ -132,6 +133,8 @@ export async function POST(req: Request) {
     if (updErr) {
       return new NextResponse("db error", { status: 500 });
     }
+
+    await trySendPaymentSuccessNotificationEmailsOnce(supabase, order.id);
   } else if (order.status === "paid") {
     const patch: Record<string, unknown> = { updated_at: now, ...logisticsPatch };
     if (paymentType && !order.payuni_payment_type) {

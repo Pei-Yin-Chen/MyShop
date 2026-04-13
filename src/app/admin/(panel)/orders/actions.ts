@@ -9,6 +9,8 @@ import {
   ORDER_ADMIN_NOTE_HANDLING_VALUES,
 } from "@/lib/admin/admin-order-notes";
 import { isValidShippingCarrier } from "@/lib/orders/shipping-carriers";
+import { sendOrderShippedNotificationEmail } from "@/lib/email/order-notifications";
+import { fetchSiteSettings } from "@/lib/supabase/fetch-site-settings";
 
 const MARK_SHIPPABLE_ORDER_STATUSES = ["paid", "processing"] as const;
 const MAX_TRACKING_LEN = 120;
@@ -73,12 +75,18 @@ export async function saveAdminOrderProcessingAction(
 
   const { data: current, error: loadError } = await supabase
     .from("orders")
-    .select("status, admin_note_body, admin_note_handling_status")
+    .select(
+      "status, admin_note_body, admin_note_handling_status, shipping_method, shipped_at, delivered_at, user_id",
+    )
     .eq("id", orderId)
     .maybeSingle<{
       status: string;
       admin_note_body: string | null;
       admin_note_handling_status: string;
+      shipping_method: string;
+      shipped_at: string | null;
+      delivered_at: string | null;
+      user_id: string | null;
     }>();
 
   if (loadError) return { ok: false, error: loadError.message };
@@ -91,12 +99,23 @@ export async function saveAdminOrderProcessingAction(
     status?: string;
     admin_note_body?: string | null;
     admin_note_handling_status?: string;
+    delivered_at?: string;
     updated_at: string;
   } = {
     updated_at: new Date().toISOString(),
   };
 
-  if (status !== current.status) patch.status = status;
+  if (status !== current.status) {
+    patch.status = status;
+    if (
+      status === "completed" &&
+      current.status === "shipped" &&
+      current.shipping_method === "home" &&
+      !current.delivered_at
+    ) {
+      patch.delivered_at = new Date().toISOString();
+    }
+  }
   if (!bodyUnchanged) patch.admin_note_body = nextBody;
   if (effectiveHandling !== current.admin_note_handling_status) {
     patch.admin_note_handling_status = effectiveHandling;
@@ -113,6 +132,12 @@ export async function saveAdminOrderProcessingAction(
 
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
+  if (status !== current.status) {
+    revalidatePath("/member/orders");
+    if (current.user_id) {
+      revalidatePath(`/member/orders/${orderId}`);
+    }
+  }
   return { ok: true, message: "已儲存" };
 }
 
@@ -137,7 +162,9 @@ export async function markOrderFulfilledAction(
 
   const { data: row, error: loadError } = await supabase
     .from("orders")
-    .select("id, status, shipping_method, shipped_at, user_id")
+    .select(
+      "id, status, shipping_method, shipped_at, user_id, recipient_email, recipient_name, order_number",
+    )
     .eq("id", orderId)
     .maybeSingle<{
       id: string;
@@ -145,6 +172,9 @@ export async function markOrderFulfilledAction(
       shipping_method: string;
       shipped_at: string | null;
       user_id: string | null;
+      recipient_email: string;
+      recipient_name: string;
+      order_number: string;
     }>();
 
   if (loadError) return { ok: false, error: loadError.message };
@@ -203,6 +233,22 @@ export async function markOrderFulfilledAction(
     .eq("id", orderId);
 
   if (updateError) return { ok: false, error: updateError.message };
+
+  try {
+    const site = await fetchSiteSettings();
+    await sendOrderShippedNotificationEmail({
+      siteTitle: site.siteTitle,
+      orderId,
+      orderNumber: row.order_number,
+      recipientName: row.recipient_name,
+      customerEmail: row.recipient_email,
+      fulfillmentKind: kind === "store_pickup" ? "store_pickup" : "home",
+      carrier,
+      tracking,
+    });
+  } catch (e) {
+    console.error("[orders] shipped email:", e);
+  }
 
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
@@ -270,4 +316,65 @@ export async function markStoreOrderPickedUpAction(
     revalidatePath(`/member/orders/${orderId}`);
   }
   return { ok: true, message: "已標記為已完成" };
+}
+
+export type MarkHomeOrderDeliveredActionState =
+  | { ok: true; message?: string }
+  | { ok: false; error: string };
+
+/** 宅配：管理員確認貨件已送達，訂單改為「已完成」並記錄送達時間 */
+export async function markHomeOrderDeliveredAction(
+  _prev: MarkHomeOrderDeliveredActionState | undefined,
+  formData: FormData,
+): Promise<MarkHomeOrderDeliveredActionState> {
+  const { supabase, error: authError } = await requireAdminSupabase();
+  if (!supabase || authError) return { ok: false, error: authError ?? "未授權" };
+
+  const orderId = String(formData.get("order_id") ?? "").trim();
+  if (!orderId) return { ok: false, error: "缺少訂單 ID" };
+
+  const { data: row, error: loadError } = await supabase
+    .from("orders")
+    .select("id, status, shipping_method, shipped_at, user_id")
+    .eq("id", orderId)
+    .maybeSingle<{
+      id: string;
+      status: string;
+      shipping_method: string;
+      shipped_at: string | null;
+      user_id: string | null;
+    }>();
+
+  if (loadError) return { ok: false, error: loadError.message };
+  if (!row) return { ok: false, error: "找不到訂單" };
+
+  if (row.shipping_method !== "home") {
+    return { ok: false, error: "僅宅配訂單可使用此流程" };
+  }
+  if (row.status !== "shipped") {
+    return { ok: false, error: "請先完成出貨，或於「訂單處理」變更狀態" };
+  }
+  if (!row.shipped_at) {
+    return { ok: false, error: "此訂單缺少出貨時間，無法確認送達" };
+  }
+
+  const now = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from("orders")
+    .update({
+      status: "completed",
+      delivered_at: now,
+      updated_at: now,
+    })
+    .eq("id", orderId);
+
+  if (updateError) return { ok: false, error: updateError.message };
+
+  revalidatePath("/admin/orders");
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/member/orders");
+  if (row.user_id) {
+    revalidatePath(`/member/orders/${orderId}`);
+  }
+  return { ok: true, message: "已確認送達" };
 }

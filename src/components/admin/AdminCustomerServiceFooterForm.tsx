@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState, startTransition, type FormEvent } from "react";
 import { AdminFormFooterActions } from "@/components/admin/AdminFormFooterActions";
+import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useActionSuccessToast } from "@/lib/hooks/use-action-success-toast";
@@ -29,8 +30,24 @@ export function AdminCustomerServiceFooterForm({ initial }: { initial: CustomerS
   const [links, setLinks] = useState<CustomerServiceFooterLink[]>(() =>
     initial.length > 0 ? initial : [{ label: "", href: "" }],
   );
+  /** 待確認移除的列索引（僅該列已填內容時會設為數字） */
+  const [removeIndexPending, setRemoveIndexPending] = useState<number | null>(null);
 
   const jsonPayload = useMemo(() => JSON.stringify(links), [links]);
+
+  function requestRemoveRow(index: number) {
+    const row = links[index];
+    const hasContent = Boolean(row?.label.trim() || row?.href.trim());
+    if (hasContent) setRemoveIndexPending(index);
+    else setLinks((prev) => prev.filter((_, j) => j !== index));
+  }
+
+  function confirmRemoveRow() {
+    if (removeIndexPending === null) return;
+    const i = removeIndexPending;
+    setRemoveIndexPending(null);
+    setLinks((prev) => prev.filter((_, j) => j !== i));
+  }
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -98,7 +115,7 @@ export function AdminCustomerServiceFooterForm({ initial }: { initial: CustomerS
                 disabled={links.length <= 1}
                 title="移除此列"
                 aria-label="移除此列"
-                onClick={() => setLinks((prev) => prev.filter((_, j) => j !== i))}
+                onClick={() => requestRemoveRow(i)}
               >
                 <Trash2 className="size-4" />
               </Button>
@@ -106,6 +123,17 @@ export function AdminCustomerServiceFooterForm({ initial }: { initial: CustomerS
           </div>
         ))}
       </div>
+
+      <AdminConfirmDialog
+        open={removeIndexPending !== null}
+        title="移除此列？"
+        description="此列已填寫連結文字或網址。移除後須按「儲存」才會套用至網站；若尚未儲存，也可重新整理頁面還原。"
+        cancelLabel="取消"
+        confirmLabel="移除"
+        confirmVariant="destructive"
+        onCancel={() => setRemoveIndexPending(null)}
+        onConfirm={confirmRemoveRow}
+      />
 
       <Button
         type="button"

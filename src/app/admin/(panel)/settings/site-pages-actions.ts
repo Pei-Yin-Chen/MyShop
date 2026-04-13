@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { fetchUserIsAdmin } from "@/lib/supabase/is-admin";
 import {
+  CUSTOMER_SERVICE_SLUG_RE,
   validateCustomerServiceHref,
   validateCustomerServiceSlug,
   customerServicePagePublicPath,
@@ -175,4 +176,21 @@ export async function createCustomerServicePageAction(
   revalidatePath(customerServicePagePublicPath(slug));
   revalidatePath("/admin/settings/site-pages");
   return { ok: true, message: "已新增說明頁" };
+}
+
+export async function deleteCustomerServicePageAction(slug: string): Promise<{ ok: boolean; error?: string }> {
+  const { supabase, error: authError } = await requireAdminSupabase();
+  if (!supabase || authError) return { ok: false, error: authError ?? "未授權" };
+
+  const s = slug.trim().toLowerCase();
+  if (!s) return { ok: false, error: "請指定網址名稱" };
+  if (s.length > 80 || !CUSTOMER_SERVICE_SLUG_RE.test(s)) return { ok: false, error: "網址名稱格式不正確" };
+
+  const { error } = await supabase.from("customer_service_pages").delete().eq("slug", s);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/");
+  revalidatePath(customerServicePagePublicPath(s));
+  revalidatePath("/admin/settings/site-pages");
+  return { ok: true };
 }

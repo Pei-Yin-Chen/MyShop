@@ -43,6 +43,7 @@ type OrderRow = {
   shipping_carrier: string | null;
   shipping_tracking_number: string | null;
   shipped_at: string | null;
+  delivered_at: string | null;
 };
 
 type OrderItemRow = {
@@ -101,7 +102,7 @@ export default async function MemberOrderDetailPage({
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select(
-      "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes, customer_note, payuni_payment_type, payuni_payment_detail, payuni_expire_at, shipping_carrier, shipping_tracking_number, shipped_at",
+      "id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes, customer_note, payuni_payment_type, payuni_payment_detail, payuni_expire_at, shipping_carrier, shipping_tracking_number, shipped_at, delivered_at",
     )
     .eq("id", id)
     .eq("user_id", user?.id ?? "")
@@ -301,6 +302,14 @@ export default async function MemberOrderDetailPage({
                     {formatOrderDateTimeZh(order.shipped_at)}
                   </span>
                 </div>
+                {order.delivered_at ? (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">送達時間</span>
+                    <span className="text-right font-medium text-foreground">
+                      {formatOrderDateTimeZh(order.delivered_at)}
+                    </span>
+                  </div>
+                ) : null}
               </>
             ) : order.shipping_method === "store" && order.shipped_at ? (
               <div className="flex justify-between gap-4">

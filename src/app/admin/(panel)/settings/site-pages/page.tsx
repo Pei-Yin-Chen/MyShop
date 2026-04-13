@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminBackToListLink } from "@/components/admin/AdminBackToListLink";
@@ -11,6 +12,7 @@ import {
 import { fetchFooterQuickLinks } from "@/lib/supabase/fetch-footer-quick-links";
 import { formatOrderDateTimeZh } from "@/lib/format-order-datetime";
 import { customerServicePagePublicPath } from "@/lib/customer-service";
+import { AdminDeleteSitePageButton } from "@/components/admin/AdminDeleteSitePageButton";
 import { cn } from "@/lib/utils";
 
 export default async function AdminSitePagesSettingsPage() {
@@ -102,15 +104,25 @@ export default async function AdminSitePagesSettingsPage() {
                       {formatOrderDateTimeZh(p.updated_at)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/settings/site-pages/${p.slug}`}
-                        className={cn(
-                          buttonVariants({ variant: "ghost", size: "sm" }),
-                          "text-primary hover:underline",
-                        )}
-                      >
-                        編輯
-                      </Link>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/admin/settings/site-pages/${p.slug}`}
+                          className={cn(
+                            buttonVariants({ variant: "ghost", size: "icon-sm" }),
+                            "text-muted-foreground hover:text-foreground",
+                          )}
+                          title="編輯"
+                          aria-label={`編輯「${p.title}」`}
+                        >
+                          <Pencil className="size-4" aria-hidden />
+                        </Link>
+                        <AdminDeleteSitePageButton
+                          slug={p.slug}
+                          pageTitle={p.title}
+                          appearance="icon"
+                          afterDelete="refresh"
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}

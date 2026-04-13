@@ -23,6 +23,7 @@ import {
 import { AdminBackToListLink } from "@/components/admin/AdminBackToListLink";
 import { AdminOrderProcessingForm } from "@/components/admin/AdminOrderProcessingForm";
 import { AdminOrderShipButton } from "@/components/admin/AdminOrderShipButton";
+import { AdminOrderConfirmHomeDeliveryButton } from "@/components/admin/AdminOrderConfirmHomeDeliveryButton";
 import { AdminOrderStoreMarkCompleteButton } from "@/components/admin/AdminOrderStoreMarkCompleteButton";
 import { AdminPayuniLogisticsQueryButton } from "@/components/admin/AdminPayuniLogisticsQueryButton";
 import { orderLogisticsStatusLabel } from "@/lib/orders/order-logistics-display";
@@ -59,6 +60,7 @@ type OrderRow = {
   shipping_carrier: string | null;
   shipping_tracking_number: string | null;
   shipped_at: string | null;
+  delivered_at: string | null;
   payuni_logistics_lgs_type: string | null;
   payuni_logistics_ship_trade_no: string | null;
   payuni_logistics_trade_type: string | null;
@@ -121,7 +123,7 @@ export default async function AdminOrderDetailPage({
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select(
-      "id, user_id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes, customer_note, payuni_payment_type, payuni_payment_detail, payuni_expire_at, admin_note_body, admin_note_handling_status, shipping_carrier, shipping_tracking_number, shipped_at, payuni_logistics_lgs_type, payuni_logistics_ship_trade_no, payuni_logistics_trade_type, payuni_logistics_return_odno",
+      "id, user_id, order_number, created_at, total, subtotal, shipping_fee, shipping_method, shipping_address, status, recipient_name, recipient_phone, recipient_email, notes, customer_note, payuni_payment_type, payuni_payment_detail, payuni_expire_at, admin_note_body, admin_note_handling_status, shipping_carrier, shipping_tracking_number, shipped_at, delivered_at, payuni_logistics_lgs_type, payuni_logistics_ship_trade_no, payuni_logistics_trade_type, payuni_logistics_return_odno",
     )
     .eq("id", id)
     .maybeSingle<OrderRow>();
@@ -167,6 +169,10 @@ export default async function AdminOrderDetailPage({
     (order.status === "paid" || order.status === "processing") && !order.shipped_at;
   const showStoreMarkCompleteAction =
     order.shipping_method === "store" && order.status === "shipped";
+  const showHomeConfirmDeliveredAction =
+    order.shipping_method === "home" &&
+    order.status === "shipped" &&
+    Boolean(order.shipped_at);
   const showPayuniLogisticsQuery = getPayuniConfig() !== null;
   const payuniLgsFallback = inferPayuniLgsTypeFromOrder({
     shipping_method: order.shipping_method,
@@ -297,6 +303,9 @@ export default async function AdminOrderDetailPage({
                         variant={order.shipping_method === "home" ? "ship" : "store_pickup"}
                       />
                     ) : null}
+                    {showHomeConfirmDeliveredAction ? (
+                      <AdminOrderConfirmHomeDeliveryButton orderId={order.id} />
+                    ) : null}
                     {showStoreMarkCompleteAction ? (
                       <AdminOrderStoreMarkCompleteButton orderId={order.id} />
                     ) : null}
@@ -342,6 +351,14 @@ export default async function AdminOrderDetailPage({
                         {formatOrderDateTimeZh(order.shipped_at)}
                       </span>
                     </div>
+                    {order.delivered_at ? (
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">送達時間</span>
+                        <span className="text-right font-medium text-foreground">
+                          {formatOrderDateTimeZh(order.delivered_at)}
+                        </span>
+                      </div>
+                    ) : null}
                     <Separator className="my-3" />
                   </>
                 ) : null}
