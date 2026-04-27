@@ -144,8 +144,13 @@ export function Navbar({
     };
   }, [supabase, syncUser]);
 
-  /** 僅用 Server Action 登出並 redirect，避免與 `router.refresh()` 競態（Next.js：Router action dispatched before initialization） */
-  function handleSignOut() {
+  /**
+   * 先於瀏覽器執行 signOut，讓 @supabase/ssr 與 onAuthStateChange 立刻清掉顯示用 user；
+   * 再交給 Server Action 清服務端 session、revalidate、redirect。僅用 Server Action 時，
+   * 生產環境曾出現導回 `/` 而 pathname 未變、導航列殘留「會員/登出」的狀況。
+   */
+  async function handleSignOut() {
+    await supabase.auth.signOut();
     void signOut();
   }
 
