@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/use-wishlist";
 import { cn } from "@/lib/utils";
-import DOMPurify from "isomorphic-dompurify";
 import { stripHtmlToPlainText } from "@/lib/html/rich-text";
+import { sanitizeRichHtml } from "@/lib/sanitize-rich-html";
 
 const MADE_TO_ORDER_CATEGORIES = ["蛋糕", "甜點"] as const;
 
@@ -167,7 +167,7 @@ export function ProductInfo({ product }: { product: Product }) {
         <div
           className="text-base leading-relaxed text-muted-foreground [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-6"
           dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(product.description),
+            __html: sanitizeRichHtml(product.description),
           }}
         />
       ) : (

@@ -1,5 +1,5 @@
-import DOMPurify from "isomorphic-dompurify";
 import { Footer } from "@/components/Footer";
+import { sanitizeRichHtml } from "@/lib/sanitize-rich-html";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -10,7 +10,7 @@ type Props = {
 
 /** 站內說明頁（/about、/faq 等）共用版型與內文樣式 */
 export function RichTextSitePage({ title, metaDescription, bodyHtml }: Props) {
-  const safeHtml = DOMPurify.sanitize(bodyHtml);
+  const safeHtml = sanitizeRichHtml(bodyHtml);
 
   return (
     <div className="flex min-h-screen flex-col">

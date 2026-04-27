@@ -11,7 +11,7 @@ import {
   fetchRelatedProducts,
 } from "@/lib/supabase/fetch-products";
 import { stripHtmlToPlainText } from "@/lib/html/rich-text";
-import DOMPurify from "isomorphic-dompurify";
+import { sanitizeRichHtml } from "@/lib/sanitize-rich-html";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -125,7 +125,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     <div
                       className="[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-6"
                       dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(product.description),
+                        __html: sanitizeRichHtml(product.description),
                       }}
                     />
                   ) : (
