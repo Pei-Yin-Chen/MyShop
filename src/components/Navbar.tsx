@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ShoppingCart, Menu, Heart, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -39,6 +39,7 @@ export function Navbar({
   navProductCategories?: string[];
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { totalItems } = useCart();
   const [wishCount, setWishCount] = useState(0);
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -151,6 +152,7 @@ export function Navbar({
    */
   async function handleSignOut() {
     await supabase.auth.signOut();
+    router.refresh();
     void signOut();
   }
 
